@@ -1,0 +1,84 @@
+<section id="contact" class="contact-section">
+  <div class="contact-section-inner">
+    <div class="contact-section-copy">
+      <p class="contact-section-eyebrow">Vamos trabalhar juntos</p>
+      <h2 class="contact-section-title">Conte-me sobre sua ideia</h2>
+      <p class="contact-section-intro">
+        Tem um projeto, uma colaboração ou uma história para transformar em imagem?
+        Envie uma mensagem e vamos conversar.
+      </p>
+    </div>
+
+    <form
+      class="portfolio-contact-form"
+      action="https://formsubmit.co/ingrideaukanaii16@gmail.com"
+      method="POST"
+    >
+      <input type="hidden" name="_subject" value="Novo contato pelo portfólio Aukanaii" />
+      <input type="hidden" name="_captcha" value="false" />
+      <input type="text" name="_honey" class="contact-form-honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+      <div class="contact-form-grid">
+        <label class="contact-form-field">
+          <span>Nome <strong aria-hidden="true">*</strong></span>
+          <input type="text" name="nome" autocomplete="name" required />
+        </label>
+
+        <label class="contact-form-field">
+          <span>E-mail <strong aria-hidden="true">*</strong></span>
+          <input type="email" name="email" autocomplete="email" required />
+        </label>
+
+        <label class="contact-form-field">
+          <span>Telefone <small>(opcional)</small></span>
+          <input type="tel" name="telefone" autocomplete="tel" />
+        </label>
+
+        <label class="contact-form-field contact-form-field-message">
+          <span>Mensagem <strong aria-hidden="true">*</strong></span>
+          <textarea name="mensagem" rows="5" required></textarea>
+        </label>
+      </div>
+
+      <button type="submit" class="contact-form-submit">Enviar mensagem</button>
+      <p class="contact-form-status" id="contact-form-status" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+</section>
+
+<script>
+  const contactForm = document.querySelector<HTMLFormElement>('.portfolio-contact-form');
+  const contactFormStatus = document.getElementById('contact-form-status');
+  const contactFormSubmit = contactForm?.querySelector<HTMLButtonElement>('button[type="submit"]');
+
+  contactForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!contactFormStatus || !contactFormSubmit) return;
+
+    contactFormSubmit.disabled = true;
+    contactFormSubmit.textContent = 'Enviando...';
+    contactFormStatus.className = 'contact-form-status is-sending';
+    contactFormStatus.textContent = 'Enviando sua mensagem...';
+
+    try {
+      const response = await fetch(contactForm.action, {
+        method: 'POST',
+        body: new FormData(contactForm),
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!response.ok) throw new Error('Form submission failed');
+
+      contactForm.reset();
+      contactFormStatus.className = 'contact-form-status is-success';
+      contactFormStatus.textContent = 'Mensagem enviada com sucesso. Obrigada pelo contato!';
+      contactFormSubmit.textContent = 'Mensagem enviada';
+    } catch {
+      contactFormStatus.className = 'contact-form-status is-error';
+      contactFormStatus.textContent = 'Não foi possível enviar agora. Tente novamente ou entre em contato pelo Instagram.';
+      contactFormSubmit.textContent = 'Tentar novamente';
+    } finally {
+      contactFormSubmit.disabled = false;
+    }
+  });
+</script>

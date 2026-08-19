@@ -1,0 +1,1014 @@
+---
+import { projectsConfig } from "../config/projects";
+---
+
+<section id="projects" class="projects-section">
+  <div class="projects-container">
+    <h2 class="projects-title">Projetos</h2>
+    <div class="projects-carousel-wrapper">
+      <div class="mask">
+        <div
+          role="region"
+          aria-roledescription="carousel"
+          class="coverflow-carousel"
+          draggable="false"
+          style="display:flex;position:relative;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:pan-y"
+        >
+          <ul
+            role="group"
+            id="projects-carousel-ul"
+            style="display:flex;position:relative;list-style-type:none;padding:0;margin:0;justify-content:flex-start;flex-direction:row;gap:0px;align-items:center;width:100%;height:100%;max-height:100%;max-width:100%;"
+          >
+            {
+              projectsConfig.projects.map((project, index) => (
+                <li
+                  class="ticker-item"
+                  aria-hidden="false"
+                  aria-posinset={index + 1}
+                  aria-setsize={projectsConfig.projects.length}
+                  style="flex-grow:0;flex-shrink:0;position:relative;height:fit-content;z-index:1000;transform:none"
+                >
+                  <img
+                    draggable="false"
+                    src={project.coverImage}
+                    alt={project.title}
+                    class="coverflow-item"
+                    width="350"
+                    height="350"
+                    decoding="async"
+                    loading={index === 0 ? "eager" : "lazy"}
+                    fetchpriority={index === 0 ? "high" : "low"}
+                    style="transform:none"
+                  />
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </div>
+    </div>
+    <!-- Project Description Area -->
+    <div class="project-description-area" id="project-description-area">
+      <div class="project-description-viewport">
+        <div class="project-description-track" id="project-description-track">
+          {
+            projectsConfig.projects.map((project, index) => (
+              <div class="project-content-item" data-project-index={index}>
+                <h3 class="project-title">{project.title}</h3>
+                <p class="project-description">{project.description}</p>
+                {project.technique && <p class="project-technique">{project.technique}</p>}
+                {/* <div class="project-technologies">
+                  {project.technologies.map((tech) => (
+                    <span class="technology-tag">{tech}</span>
+                  ))}
+                </div> */}
+                {/* <div class="project-links">
+                  <a href={project.liveLink} class="project-link">
+                    Live <span style="font-size: 1.2rem;">→</span>
+                  </a>
+                  <a href={project.githubLink} class="project-link">
+                    GitHub <span style="font-size: 1.2rem;">→</span>
+                  </a>
+                </div> */}
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="project-gallery-modal"
+    id="project-gallery-modal"
+    aria-hidden="true"
+  >
+    <button
+      type="button"
+      class="project-gallery-close"
+      id="project-gallery-close"
+      aria-label="Close gallery"
+    >
+      x
+    </button>
+
+    <div class="project-gallery-zoom-controls" aria-label="Controles de zoom">
+      <button type="button" id="project-gallery-zoom-out" aria-label="Reduzir zoom">−</button>
+      <button type="button" id="project-gallery-zoom-reset" aria-label="Restaurar zoom">100%</button>
+      <button type="button" id="project-gallery-zoom-in" aria-label="Aumentar zoom">+</button>
+    </div>
+
+    <div class="project-gallery-content">
+      <button
+        type="button"
+        class="project-gallery-nav project-gallery-prev"
+        id="project-gallery-prev"
+        aria-label="Previous image"
+      >
+        <span aria-hidden="true">&#8249;</span>
+      </button>
+
+      <img
+        id="project-gallery-image"
+        class="project-gallery-image"
+        src=""
+        decoding="async"
+        alt="Project image preview"
+      />
+
+      <button
+        type="button"
+        class="project-gallery-nav project-gallery-next"
+        id="project-gallery-next"
+        aria-label="Next image"
+      >
+        <span aria-hidden="true">&#8250;</span>
+      </button>
+    </div>
+
+    <p class="project-gallery-counter" id="project-gallery-counter"></p>
+    <div class="project-gallery-thumbnails" id="project-gallery-thumbnails" aria-label="Miniaturas da galeria"></div>
+    <p
+      class="project-gallery-caption is-hidden"
+      id="project-gallery-caption"
+      aria-live="polite"
+    ></p>
+  </div>
+</section>
+
+<script
+  type="application/json"
+  id="projects-data"
+  set:html={JSON.stringify(projectsConfig.projects)}
+/>
+
+<script>
+  // Projects Carousel - Coverflow Effect (based on the former carousel-demo reference)
+  (function initProjectsCarousel() {
+    const carouselUl = document.getElementById("projects-carousel-ul");
+    const carouselContainer = carouselUl?.parentElement; // .coverflow-carousel
+    const items = carouselUl?.querySelectorAll(".ticker-item");
+    const images = carouselUl?.querySelectorAll(".coverflow-item");
+
+    if (!carouselUl || !carouselContainer || !items || !images) {
+      console.error("Projects carousel elements not found");
+      return;
+    }
+
+    // Project data loaded from config JSON
+    const projectsData = JSON.parse(
+      document.getElementById("projects-data")?.textContent || "[]"
+    );
+
+    // Fullscreen gallery elements
+    const galleryModal = document.getElementById("project-gallery-modal");
+    const galleryImage = document.getElementById("project-gallery-image");
+    const galleryCounter = document.getElementById("project-gallery-counter");
+    const galleryCaption = document.getElementById("project-gallery-caption");
+    const galleryThumbnails = document.getElementById("project-gallery-thumbnails");
+    const galleryClose = document.getElementById("project-gallery-close");
+    const galleryPrev = document.getElementById("project-gallery-prev");
+    const galleryNext = document.getElementById("project-gallery-next");
+    const galleryZoomIn = document.getElementById("project-gallery-zoom-in");
+    const galleryZoomOut = document.getElementById("project-gallery-zoom-out");
+    const galleryZoomReset = document.getElementById("project-gallery-zoom-reset");
+    let activeProjectGalleryImages = [];
+    let activeProjectGalleryTexts = [];
+    let activeGalleryIndex = 0;
+    let galleryZoom = 1;
+    let galleryPanX = 0;
+    let galleryPanY = 0;
+    let isGalleryPanning = false;
+    let galleryPanStartX = 0;
+    let galleryPanStartY = 0;
+    let galleryHistoryActive = false;
+    let closingFromHistory = false;
+    const preloadedImages = new Set();
+
+    function updateGalleryZoom() {
+      if (!galleryImage) return;
+      galleryImage.style.transform = `translate(${galleryPanX}px, ${galleryPanY}px) scale(${galleryZoom})`;
+      galleryImage.classList.toggle("is-zoomed", galleryZoom > 1);
+      if (galleryZoomReset) {
+        galleryZoomReset.textContent = `${Math.round(galleryZoom * 100)}%`;
+      }
+    }
+
+    function setGalleryZoom(nextZoom) {
+      galleryZoom = Math.min(3, Math.max(1, nextZoom));
+      if (galleryZoom === 1) {
+        galleryPanX = 0;
+        galleryPanY = 0;
+      }
+      updateGalleryZoom();
+    }
+
+    function resetGalleryZoom() {
+      galleryZoom = 1;
+      galleryPanX = 0;
+      galleryPanY = 0;
+      updateGalleryZoom();
+    }
+
+    function preloadImage(src) {
+      if (!src || preloadedImages.has(src)) return;
+      const image = new Image();
+      image.decoding = "async";
+      image.src = src;
+      preloadedImages.add(src);
+    }
+
+    function preloadGalleryNeighbors(radius = 2) {
+      if (activeProjectGalleryImages.length === 0) return;
+
+      for (let step = 0; step <= radius; step++) {
+        const nextIndex =
+          (activeGalleryIndex + step) % activeProjectGalleryImages.length;
+        const prevIndex =
+          (activeGalleryIndex - step + activeProjectGalleryImages.length) %
+          activeProjectGalleryImages.length;
+
+        preloadImage(activeProjectGalleryImages[nextIndex]);
+        preloadImage(activeProjectGalleryImages[prevIndex]);
+      }
+    }
+
+    function getProjectGalleryImages(projectIndex) {
+      const project = projectsData[projectIndex] || {};
+      const projectGallery = Array.isArray(project.galleryImages)
+        ? project.galleryImages.filter((imagePath) =>
+            typeof imagePath === "string"
+          )
+        : [];
+
+      if (projectGallery.length > 0) return projectGallery;
+      if (typeof project.coverImage === "string" && project.coverImage.length > 0) {
+        return [project.coverImage];
+      }
+      return [];
+    }
+
+    function getProjectGalleryTexts(projectIndex, galleryLength) {
+      const project = projectsData[projectIndex] || {};
+
+      if (!Array.isArray(project.galleryTexts)) {
+        return new Array(galleryLength).fill("");
+      }
+
+      const texts = project.galleryTexts
+        .slice(0, galleryLength)
+        .map((text) => (typeof text === "string" ? text.trim() : ""));
+
+      while (texts.length < galleryLength) {
+        texts.push("");
+      }
+
+      return texts;
+    }
+
+    function renderGalleryThumbnails() {
+      if (!galleryThumbnails) return;
+
+      galleryThumbnails.innerHTML = "";
+      activeProjectGalleryImages.forEach((src, index) => {
+        const thumbnail = document.createElement("button");
+        thumbnail.type = "button";
+        thumbnail.className = "project-gallery-thumbnail";
+        thumbnail.setAttribute("aria-label", `Abrir imagem ${index + 1}`);
+
+        const image = document.createElement("img");
+        image.src = src;
+        image.alt = "";
+        image.loading = "lazy";
+        image.decoding = "async";
+        thumbnail.appendChild(image);
+        thumbnail.addEventListener("click", () => {
+          activeGalleryIndex = index;
+          updateGalleryImage();
+        });
+        galleryThumbnails.appendChild(thumbnail);
+      });
+    }
+
+    function updateGalleryImage() {
+      if (
+        !galleryImage ||
+        !galleryCounter ||
+        activeProjectGalleryImages.length === 0
+      )
+        return;
+
+      const normalizedIndex =
+        ((activeGalleryIndex % activeProjectGalleryImages.length) +
+          activeProjectGalleryImages.length) %
+        activeProjectGalleryImages.length;
+      activeGalleryIndex = normalizedIndex;
+
+      galleryImage.src = activeProjectGalleryImages[normalizedIndex];
+      resetGalleryZoom();
+      galleryImage.alt = `Project ${normalizedIndex + 1}`;
+      galleryCounter.textContent = `${normalizedIndex + 1} / ${activeProjectGalleryImages.length}`;
+
+      if (galleryThumbnails) {
+        galleryThumbnails.querySelectorAll(".project-gallery-thumbnail").forEach((thumbnail, index) => {
+          thumbnail.classList.toggle("is-active", index === normalizedIndex);
+        });
+      }
+
+      if (galleryCaption) {
+        const caption = activeProjectGalleryTexts[normalizedIndex] || "";
+        if (caption) {
+          galleryCaption.textContent = caption;
+          galleryCaption.classList.remove("is-hidden");
+        } else {
+          galleryCaption.textContent = "";
+          galleryCaption.classList.add("is-hidden");
+        }
+      }
+
+      preloadGalleryNeighbors(2);
+    }
+
+    function openGallery(projectIndex) {
+      if (!galleryModal) return;
+
+      const project = projectsData[projectIndex] || {};
+      activeProjectGalleryImages = getProjectGalleryImages(projectIndex);
+      if (activeProjectGalleryImages.length === 0) return;
+      activeProjectGalleryTexts = getProjectGalleryTexts(
+        projectIndex,
+        activeProjectGalleryImages.length
+      );
+      renderGalleryThumbnails();
+
+      const coverIndex =
+        typeof project.coverImage === "string"
+          ? activeProjectGalleryImages.indexOf(project.coverImage)
+          : -1;
+      activeGalleryIndex = coverIndex >= 0 ? coverIndex : 0;
+      updateGalleryImage();
+      preloadGalleryNeighbors(3);
+      galleryModal.classList.add("is-open");
+      galleryModal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      if (!galleryHistoryActive) {
+        window.history.pushState({ galleryOpen: true }, "", window.location.href);
+        galleryHistoryActive = true;
+      }
+      stopAutoPlay();
+
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(() => preloadGalleryNeighbors(5));
+      } else {
+        setTimeout(() => preloadGalleryNeighbors(5), 200);
+      }
+    }
+
+    function closeGallery() {
+      if (!galleryModal) return;
+      if (galleryHistoryActive && !closingFromHistory) {
+        window.history.back();
+        return;
+      }
+      galleryModal.classList.remove("is-open");
+      galleryModal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+      galleryHistoryActive = false;
+      closingFromHistory = false;
+      resetGalleryZoom();
+      if (isAutoPlaying) {
+        startAutoPlay();
+      }
+    }
+
+    function openGalleryAtVirtualIndex(virtualIndex) {
+      const realIndex = getRealProjectIndex(virtualIndex);
+      openGallery(realIndex);
+    }
+
+    // Update project description with vertical scroll to avoid flicker
+    const descriptionTrack = document.getElementById(
+      "project-description-track"
+    );
+    const descriptionViewport = document.querySelector(
+      ".project-description-viewport"
+    );
+    let currentProjectIndex = 0;
+    let isScrolling = false;
+    let currentTranslateY = 0;
+
+    // Initialize: position the first project
+    function initializeDescriptionPosition() {
+      if (!descriptionTrack || !descriptionViewport) return;
+
+      const items = descriptionTrack.querySelectorAll(".project-content-item");
+      if (items.length === 0) return;
+
+      const firstItem = items[0];
+      if (firstItem) {
+        // Wait for layout to complete before measuring
+        requestAnimationFrame(() => {
+          // Move the first item to align with the viewport top
+          const firstItemTop = firstItem.offsetTop;
+          currentTranslateY = -firstItemTop;
+          descriptionTrack.style.transform = `translateY(${currentTranslateY}px)`;
+        });
+      }
+    }
+
+    function updateProjectDescription(projectIndex) {
+      if (!descriptionTrack || !descriptionViewport || isScrolling) return;
+      if (projectIndex === currentProjectIndex) return;
+
+      const items = descriptionTrack.querySelectorAll(".project-content-item");
+      if (items.length === 0) return;
+
+      if (projectIndex < 0 || projectIndex >= items.length) return;
+
+      // Get target project position
+      const targetItem = items[projectIndex];
+      if (!targetItem) return;
+
+      // Compute target translate so the project aligns with viewport top
+      const targetItemTop = targetItem.offsetTop;
+      const targetY = -targetItemTop;
+
+      // Start scroll animation
+      isScrolling = true;
+      const startY = currentTranslateY;
+      const startTime = performance.now();
+      const duration = 500; // 500ms scroll animation
+
+      function animateScroll(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Ease-in-out cubic
+        const easeInOutCubic =
+          progress < 0.5
+            ? 4 * progress * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+        currentTranslateY = startY + (targetY - startY) * easeInOutCubic;
+        descriptionTrack.style.transform = `translateY(${currentTranslateY}px)`;
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          // Animation done
+          currentTranslateY = targetY;
+          currentProjectIndex = projectIndex;
+          isScrolling = false;
+        }
+      }
+
+      requestAnimationFrame(animateScroll);
+    }
+
+    let itemWidth = 350;
+    const gap = 0;
+    const totalItems = items.length;
+    const cloneCount = totalItems;
+
+    // Create cloned items (front clones: full list)
+    for (let i = 0; i < cloneCount; i++) {
+      const originalItem = items[i];
+      const clone = originalItem.cloneNode(true);
+      clone.classList.add("clone-item");
+      clone.setAttribute("data-clone-index", i);
+      clone.setAttribute("data-original-index", i);
+      clone.setAttribute("aria-hidden", "true");
+      carouselUl.insertBefore(clone, items[0]);
+    }
+
+    // Create cloned items (back clones: full list)
+    for (let i = 0; i < cloneCount; i++) {
+      const originalItem = items[i];
+      const clone = originalItem.cloneNode(true);
+      clone.classList.add("clone-item");
+      clone.setAttribute("data-clone-index", i);
+      clone.setAttribute("data-original-index", i);
+      clone.setAttribute("aria-hidden", "true");
+      carouselUl.appendChild(clone);
+    }
+
+    // Re-fetch all items (including clones)
+    const allItems = carouselUl.querySelectorAll(".ticker-item");
+    const allImages = carouselUl.querySelectorAll(".coverflow-item");
+    const totalVirtualItems = totalItems * 3;
+
+    function updateItemWidth() {
+      const referenceImage = carouselUl.querySelector(".coverflow-item");
+      if (!referenceImage) return;
+
+      const measuredWidth = referenceImage.getBoundingClientRect().width;
+      if (measuredWidth > 0) {
+        itemWidth = measuredWidth;
+      }
+    }
+
+    let currentX = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startScrollLeft = 0;
+    let velocity = 0;
+    let lastX = 0;
+    let lastTime = 0;
+    let animationFrameId = null;
+    let dragDistance = 0;
+    let clickedItemIndex = null;
+    let autoPlayTimer = null;
+    let isAutoPlaying = true;
+    const autoPlayInterval = 4000;
+    let lastProjectIndex = -1; // track last displayed project index
+
+    function getOffset(itemIndex, scrollX) {
+      if (!carouselContainer) return 0;
+      const containerCenter = carouselContainer.offsetWidth / 2;
+      const itemStart = itemIndex * (itemWidth + gap);
+      const itemCenterX = itemStart + scrollX + itemWidth / 2;
+      return itemCenterX - containerCenter;
+    }
+
+    function lerp(input, inputRange, outputRange) {
+      if (input <= inputRange[0]) return outputRange[0];
+      if (input >= inputRange[inputRange.length - 1])
+        return outputRange[outputRange.length - 1];
+
+      for (let i = 0; i < inputRange.length - 1; i++) {
+        if (input >= inputRange[i] && input <= inputRange[i + 1]) {
+          const t =
+            (input - inputRange[i]) / (inputRange[i + 1] - inputRange[i]);
+          if (
+            typeof outputRange[i] === "string" &&
+            outputRange[i].includes("%")
+          ) {
+            const start = parseFloat(outputRange[i]);
+            const end = parseFloat(outputRange[i + 1]);
+            return start + (end - start) * t + "%";
+          }
+          return (
+            Number(outputRange[i]) +
+            (Number(outputRange[i + 1]) - Number(outputRange[i])) * t
+          );
+        }
+      }
+      return outputRange[0];
+    }
+
+    function getTransformFromOffset(offset) {
+      const isMobile = window.matchMedia("(max-width: 600px)").matches;
+
+      if (isMobile) {
+        const isCentered = Math.abs(offset) < itemWidth * 0.52;
+        return {
+          rotateY: 0,
+          scale: 1,
+          x: "0%",
+          zIndex: isCentered ? 1200 : 0,
+          opacity: isCentered ? 1 : 0,
+        };
+      }
+
+      const rotateY = 0;
+      const scale = lerp(offset, [-200, 0, 200], [0.7, 1, 0.7]);
+      const x = "0%";
+      const zIndex = Math.max(0, Math.round(1000 - Math.abs(offset)));
+      return { rotateY, scale, x, zIndex, opacity: 1 };
+    }
+
+    function updateTransforms() {
+      allItems.forEach((item, virtualIndex) => {
+        const img = item.querySelector(".coverflow-item");
+        if (!img) return;
+
+        const offset = getOffset(virtualIndex, currentX);
+        const { rotateY, scale, x, zIndex, opacity } = getTransformFromOffset(offset);
+
+        item.style.zIndex = zIndex.toString();
+
+        const xPx = x === "0%" ? 0 : (parseFloat(x) / 100) * itemWidth;
+
+        img.style.transform = `translateX(${xPx}px) rotateY(${rotateY}deg) scale(${scale})`;
+        img.style.opacity = opacity.toString();
+      });
+    }
+
+    function getSnapPosition(virtualIndex) {
+      if (!carouselContainer) return 0;
+      const containerCenter = carouselContainer.offsetWidth / 2;
+      const itemStart = virtualIndex * (itemWidth + gap);
+      return containerCenter - itemStart - itemWidth / 2;
+    }
+
+    function checkLoopJump() {
+      if (isDragging || animationFrameId) return;
+
+      const singleSetWidth = totalItems * (itemWidth + gap);
+
+      if (currentX > -singleSetWidth / 2) {
+        currentX -= singleSetWidth;
+        carouselUl.style.transition = "none";
+        updateCarouselPosition();
+        setTimeout(() => {
+          carouselUl.style.transition = "";
+        }, 0);
+      }
+
+      const maxScroll = -singleSetWidth * 1.5;
+      if (currentX < maxScroll) {
+        currentX += singleSetWidth;
+        carouselUl.style.transition = "none";
+        updateCarouselPosition();
+        setTimeout(() => {
+          carouselUl.style.transition = "";
+        }, 0);
+      }
+    }
+
+    function findNearestItem() {
+      if (!carouselContainer) return totalItems;
+      const containerCenter = carouselContainer.offsetWidth / 2;
+      let nearestIndex = totalItems;
+      let minDistance = Infinity;
+
+      allItems.forEach((item, virtualIndex) => {
+        const itemStart = virtualIndex * (itemWidth + gap);
+        const itemCenterX = itemStart + currentX + itemWidth / 2;
+        const distance = Math.abs(itemCenterX - containerCenter);
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestIndex = virtualIndex;
+        }
+      });
+
+      return nearestIndex;
+    }
+
+    // Map virtual index to real project index
+    function getRealProjectIndex(virtualIndex) {
+      // Virtual index ranges:
+      // 0 ~ cloneCount-1: leading clones
+      // cloneCount ~ cloneCount+totalItems-1: real items
+      // cloneCount+totalItems ~ cloneCount*2+totalItems-1: trailing clones
+      if (virtualIndex < cloneCount) {
+        // Leading clones map to corresponding real item
+        return virtualIndex;
+      } else if (virtualIndex < cloneCount + totalItems) {
+        // Real item
+        return virtualIndex - cloneCount;
+      } else {
+        // Trailing clones map to corresponding real item
+        return virtualIndex - cloneCount - totalItems;
+      }
+    }
+
+    // Update project description based on nearest item
+    function updateProjectDescriptionFromCarousel() {
+      const nearestVirtualIndex = findNearestItem();
+      const realIndex = getRealProjectIndex(nearestVirtualIndex);
+      // Only update when the project actually changes
+      if (realIndex !== lastProjectIndex) {
+        lastProjectIndex = realIndex;
+        updateProjectDescription(realIndex);
+      }
+    }
+
+    // Convert virtual index to real index and update description before animation
+    function updateProjectDescriptionForVirtualIndex(virtualIndex) {
+      const realIndex = getRealProjectIndex(virtualIndex);
+      if (realIndex !== lastProjectIndex) {
+        lastProjectIndex = realIndex;
+        updateProjectDescription(realIndex);
+      }
+    }
+
+    function goToItem(virtualIndex) {
+      // Update description before carousel animation starts
+      updateProjectDescriptionForVirtualIndex(virtualIndex);
+      const snapX = getSnapPosition(virtualIndex);
+      animateTo(snapX);
+    }
+
+    function nextItem() {
+      const currentVirtualIndex = findNearestItem();
+      const nextVirtualIndex = currentVirtualIndex + 1;
+      goToItem(nextVirtualIndex);
+    }
+
+    function prevItem() {
+      const currentVirtualIndex = findNearestItem();
+      const prevVirtualIndex = currentVirtualIndex - 1;
+      goToItem(prevVirtualIndex);
+    }
+
+    function startAutoPlay() {
+      if (autoPlayTimer) return;
+      autoPlayTimer = window.setInterval(() => {
+        if (!isDragging && !animationFrameId && isAutoPlaying) {
+          nextItem();
+        }
+      }, autoPlayInterval);
+    }
+
+    function stopAutoPlay() {
+      if (autoPlayTimer) {
+        clearInterval(autoPlayTimer);
+        autoPlayTimer = null;
+      }
+    }
+
+    function pauseAutoPlay() {
+      stopAutoPlay();
+      setTimeout(() => {
+        if (isAutoPlaying) {
+          startAutoPlay();
+        }
+      }, 5000);
+    }
+
+    function animateTo(targetX, duration = 450) {
+      const startX = currentX;
+      const startTime = performance.now();
+
+      function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+        currentX = startX + (targetX - startX) * easeOutCubic;
+
+        updateCarouselPosition();
+
+        if (progress < 1) {
+          animationFrameId = requestAnimationFrame(animate);
+        } else {
+          animationFrameId = null;
+          checkLoopJump();
+          // After animation finishes, ensure description is in the correct position
+          updateProjectDescriptionFromCarousel();
+        }
+      }
+
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      animationFrameId = requestAnimationFrame(animate);
+    }
+
+    function updateCarouselPosition() {
+      carouselUl.style.transform = `translateX(${currentX}px)`;
+      updateTransforms();
+      checkLoopJump();
+    }
+
+    function recenterCarousel() {
+      updateItemWidth();
+      const nearestIndex = findNearestItem();
+      currentX = getSnapPosition(nearestIndex);
+      updateCarouselPosition();
+    }
+
+    carouselUl.addEventListener("mousedown", (e) => {
+      const clickedTarget = e.target;
+      const clickedElement =
+        clickedTarget instanceof HTMLElement
+          ? clickedTarget.closest(".ticker-item")
+          : null;
+      if (clickedElement) {
+        clickedItemIndex = Array.from(allItems).indexOf(clickedElement);
+      } else {
+        clickedItemIndex = null;
+      }
+
+      isDragging = true;
+      startX = e.pageX;
+      startScrollLeft = currentX;
+      lastX = e.pageX;
+      lastTime = performance.now();
+      velocity = 0;
+      dragDistance = 0;
+      carouselUl.style.cursor = "grabbing";
+
+      pauseAutoPlay();
+
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    });
+
+    carouselUl.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const now = performance.now();
+      const deltaTime = now - lastTime;
+      const deltaX = e.pageX - lastX;
+
+      if (deltaTime > 0) {
+        velocity = deltaX / deltaTime;
+      }
+
+      const x = e.pageX - startX;
+      dragDistance = Math.abs(x);
+      currentX = startScrollLeft + x;
+      updateCarouselPosition();
+
+      lastX = e.pageX;
+      lastTime = now;
+    });
+
+    function finishMouseDrag() {
+      if (!isDragging) return;
+
+      isDragging = false;
+      carouselUl.style.cursor = "grab";
+      let openedGallery = false;
+
+      if (dragDistance < 5 && clickedItemIndex !== null) {
+        openGalleryAtVirtualIndex(clickedItemIndex);
+        openedGallery = true;
+      } else {
+        const nearestIndex = findNearestItem();
+        // Update description before animation starts
+        updateProjectDescriptionForVirtualIndex(nearestIndex);
+        const snapX = getSnapPosition(nearestIndex);
+        animateTo(snapX);
+      }
+
+      dragDistance = 0;
+      clickedItemIndex = null;
+
+      if (!openedGallery) {
+        pauseAutoPlay();
+      }
+    }
+
+    carouselUl.addEventListener("mouseup", finishMouseDrag);
+    window.addEventListener("mouseup", finishMouseDrag);
+
+    carouselUl.addEventListener("mouseleave", () => {
+      if (isDragging) {
+        carouselUl.style.cursor = "grabbing";
+      }
+    });
+
+    carouselUl.addEventListener("touchstart", (e) => {
+      isDragging = true;
+      startX = e.touches[0].pageX;
+      startScrollLeft = currentX;
+      lastX = e.touches[0].pageX;
+      lastTime = performance.now();
+      velocity = 0;
+      dragDistance = 0;
+
+      pauseAutoPlay();
+
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    });
+
+    carouselUl.addEventListener("touchmove", (e) => {
+      if (!isDragging) return;
+      const now = performance.now();
+      const deltaTime = now - lastTime;
+      const deltaX = e.touches[0].pageX - lastX;
+
+      if (deltaTime > 0) {
+        velocity = deltaX / deltaTime;
+      }
+
+      const x = e.touches[0].pageX - startX;
+      dragDistance = Math.abs(x);
+      currentX = startScrollLeft + x;
+      updateCarouselPosition();
+
+      lastX = e.touches[0].pageX;
+      lastTime = now;
+    });
+
+    carouselUl.addEventListener("touchend", () => {
+      if (isDragging) {
+        isDragging = false;
+        let openedGallery = false;
+
+        if (dragDistance < 8) {
+          const nearestIndex = findNearestItem();
+          openGalleryAtVirtualIndex(nearestIndex);
+          openedGallery = true;
+        } else {
+          const nearestIndex = findNearestItem();
+          // Update description before animation starts
+          updateProjectDescriptionForVirtualIndex(nearestIndex);
+          const snapX = getSnapPosition(nearestIndex);
+          animateTo(snapX);
+        }
+
+        dragDistance = 0;
+
+        if (!openedGallery) {
+          pauseAutoPlay();
+        }
+      }
+    });
+
+    galleryClose?.addEventListener("click", closeGallery);
+    galleryPrev?.addEventListener("click", () => {
+      activeGalleryIndex -= 1;
+      updateGalleryImage();
+    });
+    galleryNext?.addEventListener("click", () => {
+      activeGalleryIndex += 1;
+      updateGalleryImage();
+    });
+
+    galleryZoomIn?.addEventListener("click", () => setGalleryZoom(galleryZoom + 0.25));
+    galleryZoomOut?.addEventListener("click", () => setGalleryZoom(galleryZoom - 0.25));
+    galleryZoomReset?.addEventListener("click", resetGalleryZoom);
+
+    galleryImage?.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      setGalleryZoom(galleryZoom + (event.deltaY < 0 ? 0.2 : -0.2));
+    }, { passive: false });
+
+    galleryImage?.addEventListener("pointerdown", (event) => {
+      if (galleryZoom <= 1 || !(galleryImage instanceof HTMLElement)) return;
+      isGalleryPanning = true;
+      galleryPanStartX = event.clientX - galleryPanX;
+      galleryPanStartY = event.clientY - galleryPanY;
+      galleryImage.setPointerCapture(event.pointerId);
+    });
+
+    galleryImage?.addEventListener("pointermove", (event) => {
+      if (!isGalleryPanning) return;
+      galleryPanX = event.clientX - galleryPanStartX;
+      galleryPanY = event.clientY - galleryPanStartY;
+      updateGalleryZoom();
+    });
+
+    galleryImage?.addEventListener("pointerup", () => {
+      isGalleryPanning = false;
+    });
+
+    galleryImage?.addEventListener("pointercancel", () => {
+      isGalleryPanning = false;
+    });
+
+    galleryModal?.addEventListener("click", (e) => {
+      if (e.target === galleryModal) {
+        closeGallery();
+      }
+    });
+
+    window.addEventListener("popstate", () => {
+      if (!galleryHistoryActive) return;
+      closingFromHistory = true;
+      closeGallery();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (!galleryModal || !galleryModal.classList.contains("is-open")) return;
+
+      if (e.key === "Escape") {
+        closeGallery();
+      }
+
+      if (e.key === "ArrowLeft") {
+        activeGalleryIndex -= 1;
+        updateGalleryImage();
+      }
+
+      if (e.key === "ArrowRight") {
+        activeGalleryIndex += 1;
+        updateGalleryImage();
+      }
+    });
+
+    carouselUl.style.cursor = "grab";
+
+    allImages.forEach((img) => {
+      img.style.cursor = "pointer";
+    });
+
+    if (carouselContainer) {
+      updateItemWidth();
+      const centerVirtualIndex = totalItems;
+      currentX = getSnapPosition(centerVirtualIndex);
+      updateCarouselPosition();
+    }
+
+    window.addEventListener("resize", recenterCarousel);
+
+    updateTransforms();
+
+    // Initialize description position
+    initializeDescriptionPosition();
+
+    // Initialize description (show first project without scrolling)
+    currentProjectIndex = 0;
+
+    startAutoPlay();
+  })();
+</script>
