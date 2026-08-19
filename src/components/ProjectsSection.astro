@@ -1,5 +1,9 @@
 ---
 import { projectsConfig } from "../config/projects";
+
+const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
 ---
 
 <section id="projects" class="projects-section">
@@ -57,6 +61,9 @@ import { projectsConfig } from "../config/projects";
                 <h3 class="project-title">{project.title}</h3>
                 <p class="project-description">{project.description}</p>
                 {project.technique && <p class="project-technique">{project.technique}</p>}
+                <a href={`${normalizedBaseUrl}artes/${project.slug}/`}>
+                  Conheca esta obra
+                </a>
                 {/* <div class="project-technologies">
                   {project.technologies.map((tech) => (
                     <span class="technology-tag">{tech}</span>

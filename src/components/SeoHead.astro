@@ -1,0 +1,70 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  path?: string;
+  image?: string;
+  type?: "website" | "article";
+}
+
+const {
+  title,
+  description,
+  path = "",
+  image = "image/sobre_mim.jpg",
+  type = "website",
+} = Astro.props;
+
+const basePath = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const normalizedPath = path.replace(/^\/+/, "");
+const canonicalUrl = new URL(`${basePath}${normalizedPath}`, Astro.site).toString();
+const imageUrl = new URL(
+  `${basePath}${image.replace(/^\/+/, "")}`,
+  Astro.site
+).toString();
+
+const artistSchema = {
+  "@context": "https://schema.org",
+  "@type": "VisualArtist",
+  name: "Aukanaii",
+  alternateName: "Aukanaii Art",
+  url: canonicalUrl,
+  image: imageUrl,
+  description:
+    "Aukanaii e uma artista visual indigena Atikum Uma. Sua producao abrange ilustracao, muralismo, pintura, animacao e tatuagem autoral sobre ancestralidade, territorio, memoria e povos originarios.",
+  sameAs: ["https://www.instagram.com/aukanaii_art"],
+  knowsAbout: [
+    "arte indigena contemporanea",
+    "ilustracao digital",
+    "muralismo",
+    "pintura",
+    "animacao digital",
+    "tatuagem autoral",
+    "ancestralidade indigena",
+    "povos originarios",
+  ],
+  nationality: "Brasileira",
+};
+---
+
+<link rel="canonical" href={canonicalUrl} />
+<meta name="description" content={description} />
+<meta name="robots" content="index, follow, max-image-preview:large" />
+
+<meta property="og:locale" content="pt_BR" />
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content="Aukanaii" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:image:alt" content="Obra de arte autoral de Aukanaii" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
+
+<script type="application/ld+json" set:html={JSON.stringify(artistSchema)} />

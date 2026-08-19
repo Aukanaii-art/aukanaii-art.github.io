@@ -5,6 +5,7 @@ import "../styles/page-transitions.css";
 import Navigation from "../components/Navigation.astro";
 import Footer from "../components/Footer.astro";
 import { siteConfig } from "../config/site";
+import SeoHead from "../components/SeoHead.astro";
 
 const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -17,7 +18,13 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
     <link rel="icon" type="image/png" href={`${normalizedBaseUrl}image/arteazul_icone.png`} />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
-    <title>Entre em contato - Aukanaii</title>
+    <title>Contato | Aukanaii, artista visual indigena</title>
+    <SeoHead
+      title="Contato | Aukanaii, artista visual indigena"
+      description="Entre em contato com Aukanaii para projetos de ilustracao, muralismo, pintura, animacao, tatuagem e colaboracoes artisticas ligadas a arte indigena contemporanea."
+      path="contact/"
+      image="image/foto_avatar.jpg"
+    />
     <script>
       // Disable browser scroll restoration and ensure page starts at top
       if ('scrollRestoration' in history) {

@@ -8,6 +8,7 @@ import ProficiencySection from "../components/ProficiencySection.astro";
 import ProjectsSection from "../components/ProjectsSection.astro";
 import ContactSection from "../components/ContactSection.astro";
 import Footer from "../components/Footer.astro";
+import SeoHead from "../components/SeoHead.astro";
 
 const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -20,7 +21,12 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
     <link rel="icon" type="image/png" href={`${normalizedBaseUrl}image/arteazul_icone.png`} />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
-    <title>Aukanaii</title>
+    <title>Aukanaii | Artista visual indigena Atikum Uma</title>
+    <SeoHead
+      title="Aukanaii | Artista visual indigena Atikum Uma"
+      description="Portfolio de Aukanaii, artista visual indigena Atikum Uma. Conheca ilustracoes, pinturas, murais, animacoes e tatuagens autorais sobre ancestralidade, territorio, memoria e povos originarios."
+      image="image/sobre_mim.jpg"
+    />
     <script>
       // Disable browser scroll restoration and ensure page starts at top
       if ("scrollRestoration" in history) {

@@ -7,6 +7,7 @@ import Navigation from "../components/Navigation.astro";
 import Footer from "../components/Footer.astro";
 import { siteConfig } from "../config/site";
 import { postImages, defaultPostImage } from "../config/posts-images";
+import SeoHead from "../components/SeoHead.astro";
 
 const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
@@ -139,7 +140,13 @@ const allTags = Array.from(
     <link rel="icon" type="image/png" href={`${normalizedBaseUrl}image/arteazul_icone.png`} />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
-    <title>Aukanaii</title>
+    <title>Artes de Aukanaii | Ilustracao, pintura e muralismo indigena</title>
+    <SeoHead
+      title="Artes de Aukanaii | Ilustracao, pintura e muralismo indigena"
+      description="Explore o portfolio artistico de Aukanaii: ilustracao indigena contemporanea, pintura, muralismo, animacao, tatuagem autoral e obras sobre ancestralidade e povos originarios."
+      path="posts/"
+      image="images/posts/azul_genipapo/Azulgenipapo.jpg"
+    />
     <script>
       // Disable browser scroll restoration and ensure page starts at top
       if ("scrollRestoration" in history) {

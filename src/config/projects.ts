@@ -12,6 +12,7 @@ function withBase(assetPath: string): string {
 export const projectsConfig = {
   projects: [
     {
+      slug: "azul-jenipapo",
       title: "Azul Jenipapo",
       coverImage: withBase("images/posts/azul_genipapo/Azulgenipapo.jpg"),
       galleryImages: [
@@ -35,6 +36,7 @@ export const projectsConfig = {
         // "Azul jenipapo busca unir em uma figura feminina a expressão cultural, o pertencimento e a memória ancestral.",
     },
     {
+      slug: "curumin-pescador-de-sonhos",
       title: "Curumin pescador de sonhos",
       coverImage: withBase("images/posts/menino_peixe/Meninopeixe.jpg"),
       galleryImages: [
@@ -56,6 +58,7 @@ export const projectsConfig = {
         "Uma cena sobre infância, natureza e a relação de cuidado entre diferentes seres.",
     },
     {
+      slug: "espirito-de-jaguarate",
       title: "Espírito de jaguaratê",
       coverImage: withBase("images/posts/mulher_onca/Mulheronca.jpg"),
       galleryImages: [
@@ -75,6 +78,7 @@ export const projectsConfig = {
         "O espírito de jaguaratê representa a força máxima da floresta, a proteção e o mistério da noite.",
     },
     {
+      slug: "a-mao-que-cura-e-pinta",
       title: "A mão que cura e pinta",
       coverImage: withBase("images/posts/mulher_facao/Mulherfacao.jpg"),
       galleryImages: [
@@ -96,6 +100,7 @@ export const projectsConfig = {
         "O preparo do pigmento simboliza a união entre a pintura corporal, a proteção e a sabedoria ancestral.",
     },
     {
+      slug: "quem-e-daqui-sabe",
       title: "Quem é daqui sabe",
       coverImage: withBase("images/posts/quem_e_sabe/Quemesabe.jpg"),
       galleryImages: [
@@ -118,6 +123,7 @@ export const projectsConfig = {
      
     },
     {
+      slug: "exposicao-artistica-em-evento-musical",
       title: "Exposição artística em evento musical",
       coverImage: withBase("images/posts/caraguatrance/capa_expo.jpg"),
       galleryImages: [
@@ -141,6 +147,7 @@ export const projectsConfig = {
      
     },
     {
+      slug: "tatuagens-autorais",
       title: "Tatuagem realizadas",
       coverImage: withBase("images/posts/tattoo/capa.jpg"),
       galleryImages: [
@@ -160,6 +167,7 @@ export const projectsConfig = {
       // "Tatuagens realizadas com base em ilustrações autorais. A tatuagem é uma prática ancestral que representa identidade, espiritualidade e conexão com os antepassados. Mais do que uma arte corporal, ela preserva tradições, histórias e a cultura dos povos originários.",
     },
     {
+      slug: "sticker-art-indigena",
       title: "Sticker Art",
       coverImage: withBase("images/posts/Stickers/Sticker.jpg"),
       galleryImages: [
