@@ -14,6 +14,9 @@ const basePath = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
 const canonicalPath = `artes/${project.slug}/`;
+const techniques = project.technique
+  .split(" - ")
+  .filter((technique: string) => technique.trim());
 const artworkSchema = {
   "@context": "https://schema.org",
   "@type": "VisualArtwork",
@@ -46,45 +49,124 @@ const artworkSchema = {
     />
     <script type="application/ld+json" set:html={JSON.stringify(artworkSchema)} />
   </head>
-  <body>
+  <body class="artwork-page">
+    <header class="artwork-nav">
+      <a class="brand" href={basePath} aria-label="Voltar para a página inicial de Aukanaii">
+        Aukanaii
+      </a>
+      <a class="back-link" href={`${basePath}#projects`}>
+        <span aria-hidden="true">←</span> Todos os projetos
+      </a>
+    </header>
+
     <main>
-      <a href={basePath}>Aukanaii</a>
-      <article>
-        <p>Portfolio de arte indigena contemporanea</p>
-        <h1>{project.title}</h1>
-        <p>{project.description}</p>
-        <p>{project.technique}</p>
-        <img src={project.coverImage} alt={`Obra ${project.title}, de Aukanaii`} />
+      <article class="artwork">
+        <div class="artwork-intro">
+          <div class="intro-copy">
+            <p class="eyebrow">Arte indigena contemporanea</p>
+            <h1>{project.title}</h1>
+            <p class="artwork-description">{project.description}</p>
+            <div class="techniques" aria-label="Tecnicas da obra">
+              {techniques.map((technique: string) => <span>{technique}</span>)}
+            </div>
+          </div>
+          <div class="artwork-note">
+            <p>Obra autoral</p>
+            <p>Por Aukanaii</p>
+          </div>
+        </div>
+
+        <figure class="hero-artwork">
+          <img
+            src={project.coverImage}
+            alt={`Obra ${project.title}, de Aukanaii`}
+            fetchpriority="high"
+            decoding="async"
+          />
+          <figcaption>{project.galleryTexts?.[0] || `Obra ${project.title}, de Aukanaii.`}</figcaption>
+        </figure>
+
         {project.galleryImages.length > 1 && (
-          <section aria-label={`Galeria da obra ${project.title}`}>
-            <h2>Galeria da obra</h2>
-            {project.galleryImages.map((image: string, index: number) => (
-              <figure>
-                <img
-                  src={image}
-                  alt={project.galleryTexts?.[index] || `${project.title}, imagem ${index + 1}`}
-                  loading="lazy"
-                />
-                {project.galleryTexts?.[index] && <figcaption>{project.galleryTexts[index]}</figcaption>}
-              </figure>
-            ))}
+          <section class="gallery" aria-label={`Galeria da obra ${project.title}`}>
+            <div class="gallery-heading">
+              <p class="eyebrow">Desdobramentos</p>
+              <h2>Presenças da obra</h2>
+              <p>Aplicações, detalhes e registros que acompanham a criação.</p>
+            </div>
+            <div class="gallery-grid">
+              {project.galleryImages.slice(1).map((image: string, index: number) => (
+                <figure class="gallery-item">
+                  <img
+                    src={image}
+                    alt={project.galleryTexts?.[index + 1] || `${project.title}, imagem ${index + 2}`}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  {project.galleryTexts?.[index + 1] && (
+                    <figcaption>{project.galleryTexts[index + 1]}</figcaption>
+                  )}
+                </figure>
+              ))}
+            </div>
           </section>
         )}
       </article>
     </main>
+
+    <footer class="artwork-footer">
+      <a href={`${basePath}#projects`}>Ver todos os projetos <span aria-hidden="true">→</span></a>
+      <a href="https://www.instagram.com/aukanaii_art" target="_blank" rel="noopener noreferrer">
+        Instagram <span aria-hidden="true">↗</span>
+      </a>
+    </footer>
   </body>
 </html>
 
 <style>
-  body { margin: 0; font-family: Georgia, serif; color: #1d2524; background: #f7f4ec; }
-  main { width: min(1080px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 4rem; }
-  a { color: #0f5e61; }
-  article { max-width: 780px; margin: 3rem auto 0; }
-  h1 { font-size: clamp(2.25rem, 5vw, 4.5rem); font-weight: 500; }
-  p { font-size: 1.1rem; line-height: 1.65; }
-  article > img { display: block; width: 100%; height: auto; margin: 2rem 0; }
-  section { margin-top: 4rem; }
-  figure { margin: 2rem 0; }
-  figure img { display: block; width: 100%; height: auto; }
-  figcaption { margin-top: .75rem; }
+  :global(*) { box-sizing: border-box; }
+  :global(html) { background: #f4eee3; }
+  :global(body) { margin: 0; color: #26352c; background: #f4eee3; font-family: "Segoe UI", sans-serif; }
+  .artwork-nav, main, .artwork-footer { width: min(1160px, calc(100% - 3rem)); margin: 0 auto; }
+  .artwork-nav { display: flex; justify-content: space-between; align-items: center; padding: 1.4rem 0; border-bottom: 1px solid #cfc4b3; font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  a { color: inherit; text-decoration: none; }
+  .brand { color: #327a5b; font-size: 1.45rem; font-weight: 800; letter-spacing: .01em; text-transform: none; }
+  .back-link { display: inline-flex; gap: .5rem; align-items: center; color: #52645a; }
+  .back-link:hover { color: #ec6664; }
+  .artwork { padding: clamp(3rem, 9vw, 7.5rem) 0 5rem; }
+  .artwork-intro { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 3rem; align-items: end; margin-bottom: clamp(2.5rem, 6vw, 5rem); }
+  .intro-copy { max-width: 780px; }
+  .eyebrow { margin: 0 0 .9rem; color: #806f58; font-size: .73rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  h1, h2, p { margin-top: 0; }
+  h1 { margin: 0 0 1.5rem; color: #26352c; font-size: clamp(3rem, 7vw, 6.3rem); font-weight: 800; letter-spacing: 0; line-height: .95; }
+  .artwork-description { max-width: 620px; margin: 0 0 1.6rem; color: #52645a; font-size: clamp(1.08rem, 1.8vw, 1.3rem); line-height: 1.65; }
+  .techniques { display: flex; flex-wrap: wrap; gap: .45rem; }
+  .techniques span { padding: .4rem .65rem; border: 1px solid #b9aa93; border-radius: 4px; color: #52645a; font-size: .72rem; font-weight: 700; letter-spacing: .02em; }
+  .artwork-note { align-self: end; border-top: 2px solid #26352c; padding-top: .7rem; color: #52645a; font-size: .9rem; line-height: 1.4; }
+  .artwork-note p { margin-bottom: .2rem; }
+  figure { margin: 0; }
+  .hero-artwork { display: table; width: auto; max-width: 100%; margin: 0 auto; background: transparent; }
+  .hero-artwork img { display: block; width: auto; max-width: 100%; max-height: min(76vh, 880px); object-fit: contain; }
+  figcaption { color: #806f58; font-size: .78rem; line-height: 1.45; }
+  .hero-artwork figcaption { margin-top: .65rem; }
+  .gallery { margin-top: clamp(4rem, 10vw, 8rem); padding-top: 1.2rem; border-top: 1px solid #cfc4b3; }
+  .gallery-heading { display: grid; grid-template-columns: 1fr minmax(240px, 390px); column-gap: 2rem; align-items: end; margin-bottom: 2.5rem; }
+  .gallery-heading .eyebrow { grid-column: 1 / -1; }
+  h2 { margin: 0; font-size: clamp(2.2rem, 4.5vw, 4.1rem); font-weight: 800; letter-spacing: 0; line-height: .98; }
+  .gallery-heading > p:last-child { margin: 0; color: #52645a; font-size: 1rem; line-height: 1.55; }
+  .gallery-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(1.25rem, 3vw, 3rem); }
+  .gallery-item:nth-child(3n) { grid-column: span 2; }
+  .gallery-item img { display: block; width: 100%; max-height: 720px; object-fit: contain; background: transparent; }
+  .gallery-item figcaption { padding-top: .65rem; }
+  .artwork-footer { display: flex; justify-content: space-between; gap: 2rem; margin-top: 2rem; padding: 1.5rem 0 2rem; border-top: 1px solid #cfc4b3; color: #52645a; font-size: .76rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .artwork-footer a:hover { color: #ec6664; }
+  @media (max-width: 680px) {
+    .artwork-nav, main, .artwork-footer { width: min(100% - 2rem, 1160px); }
+    .artwork-nav { padding: 1.15rem 0; }
+    .artwork-intro, .gallery-heading { display: block; }
+    .artwork-note { width: 150px; margin-top: 2rem; }
+    .gallery-heading > p:last-child { margin-top: 1.15rem; }
+    .gallery-grid { grid-template-columns: 1fr; }
+    .gallery-item:nth-child(3n) { grid-column: auto; }
+    .artwork-footer { font-size: .7rem; }
+  }
 </style>
