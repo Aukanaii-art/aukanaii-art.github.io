@@ -48,8 +48,9 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         <div class="wall-ar-header">
           <h1>Simule uma arte na sua parede em AR</h1>
           <p>
-            Escolha uma obra, toque em "Iniciar AR" e aponte a câmera para a parede. Toque na
-            parede para posicionar a arte e use dois dedos para redimensionar e girar.
+            Escolha uma obra, toque em "Iniciar AR" e aponte a câmera para a superfície desejada
+            (parede, chão ou mesa). Toque na tela para posicionar a arte e use dois dedos para
+            redimensionar e girar.
           </p>
         </div>
 
@@ -90,7 +91,7 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
 
     <!-- WebXR dom-overlay: composited above the camera feed only during the AR session -->
     <div class="ar-overlay-root" id="arOverlay">
-      <p class="ar-overlay-hint" id="arOverlayHint">Toque na parede para posicionar a arte.</p>
+      <p class="ar-overlay-hint" id="arOverlayHint">Toque em uma superfície para posicionar a arte.</p>
       <div class="ar-overlay-controls">
         <button type="button" class="ar-btn" id="arRemoveBtn" hidden>Remover</button>
         <button type="button" class="ar-btn" id="arExitBtn">Sair do AR</button>
@@ -217,10 +218,15 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         placedMesh.quaternion.copy(quaternion);
         scene.add(placedMesh);
 
+        targetScale = 1;
+        targetQuaternion = placedMesh.quaternion.clone();
+
         arRemoveBtn.hidden = false;
         arOverlayHint.textContent =
           'Arte posicionada. Use dois dedos para redimensionar e girar, ou toque novamente para reposicionar.';
       }
+
+      let reticleIsWall = false;
 
       function onSelect() {
         if (reticle && reticle.visible) {
@@ -235,8 +241,9 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
           (placedMesh.material as THREE.Material).dispose();
           placedMesh = null;
         }
+        targetQuaternion = null;
         arRemoveBtn.hidden = true;
-        arOverlayHint.textContent = "Toque na parede para posicionar a arte.";
+        arOverlayHint.textContent = "Toque em uma superfície (parede, chão, mesa) para posicionar a arte.";
       }
 
       arRemoveBtn.addEventListener("click", removePlacedArtwork);
@@ -285,12 +292,28 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
                 if (pose) {
                   reticle.visible = true;
                   reticle.matrix.fromArray(pose.transform.matrix);
+
+                  // The reticle's local +Y axis is the detected surface normal: near-horizontal
+                  // normals mean a vertical surface (wall), near-vertical normals mean floor/table.
+                  const normal = new THREE.Vector3(0, 1, 0).transformDirection(
+                    new THREE.Matrix4().fromArray(pose.transform.matrix)
+                  );
+                  reticleIsWall = Math.abs(normal.y) < 0.35;
+                  (reticle.material as THREE.MeshBasicMaterial).color.set(
+                    reticleIsWall ? 0x7026b9 : 0xff4d4d
+                  );
+                  if (!placedMesh) {
+                    arOverlayHint.textContent = reticleIsWall
+                      ? "Toque para posicionar a arte na parede."
+                      : "Superfície horizontal detectada (chão/mesa). Toque para posicionar aqui.";
+                  }
                 }
               } else {
                 reticle.visible = false;
               }
             }
           }
+          updateGestureSmoothing();
           if (renderer && scene && camera) {
             renderer.render(scene, camera);
           }
@@ -305,6 +328,7 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
           hitTestSource.cancel();
           hitTestSource = null;
         }
+        reticleIsWall = false;
         arOverlay.style.display = "none";
         cleanupThree();
         teardownGestures();
@@ -333,8 +357,10 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         distance: number;
         angle: number;
         scale: number;
-        rotationY: number;
+        baseQuaternion: THREE.Quaternion;
       } | null = null;
+      let targetScale = 1;
+      let targetQuaternion: THREE.Quaternion | null = null;
 
       function getTouchDistance(touches: TouchList) {
         return Math.hypot(
@@ -356,10 +382,16 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
             distance: getTouchDistance(event.touches),
             angle: getTouchAngle(event.touches),
             scale: placedMesh.scale.x,
-            rotationY: placedMesh.rotation.y,
+            baseQuaternion: placedMesh.quaternion.clone(),
           };
+          targetScale = placedMesh.scale.x;
+          targetQuaternion = placedMesh.quaternion.clone();
         }
       }
+
+      // Rotating around the mesh's own local normal (not a world Euler axis) keeps the
+      // artwork flush with the detected surface, whatever its orientation, and avoids gimbal lock.
+      const rotationAxis = new THREE.Vector3(0, 1, 0);
 
       function onTouchMove(event: TouchEvent) {
         if (!gestureState || event.touches.length !== 2 || !placedMesh) return;
@@ -367,15 +399,28 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         const distance = getTouchDistance(event.touches);
         const angle = getTouchAngle(event.touches);
         const scaleFactor = distance / gestureState.distance;
-        const newScale = Math.min(Math.max(gestureState.scale * scaleFactor, 0.2), 4);
-        placedMesh.scale.set(newScale, newScale, newScale);
-        placedMesh.rotation.y = gestureState.rotationY + (angle - gestureState.angle);
+        targetScale = Math.min(Math.max(gestureState.scale * scaleFactor, 0.2), 4);
+
+        const deltaAngle = angle - gestureState.angle;
+        const deltaQuaternion = new THREE.Quaternion().setFromAxisAngle(rotationAxis, deltaAngle);
+        targetQuaternion = gestureState.baseQuaternion.clone().multiply(deltaQuaternion);
       }
 
       function onTouchEnd(event: TouchEvent) {
         if (event.touches.length < 2) {
           gestureState = null;
         }
+      }
+
+      // Smooth towards the gesture target every frame instead of snapping, for steadier control.
+      function updateGestureSmoothing() {
+        if (!placedMesh) return;
+        if (targetQuaternion) {
+          placedMesh.quaternion.slerp(targetQuaternion, 0.35);
+        }
+        const currentScale = placedMesh.scale.x;
+        const nextScale = currentScale + (targetScale - currentScale) * 0.35;
+        placedMesh.scale.set(nextScale, nextScale, nextScale);
       }
 
       function setupGestures() {
@@ -389,6 +434,7 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         arOverlay.removeEventListener("touchmove", onTouchMove);
         arOverlay.removeEventListener("touchend", onTouchEnd);
         gestureState = null;
+        targetQuaternion = null;
       }
 
       document.addEventListener("DOMContentLoaded", () => {
