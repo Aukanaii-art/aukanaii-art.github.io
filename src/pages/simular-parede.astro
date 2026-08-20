@@ -93,6 +93,12 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
     <div class="ar-overlay-root" id="arOverlay">
       <p class="ar-overlay-hint" id="arOverlayHint">Toque em uma superfície para posicionar a arte.</p>
       <div class="ar-overlay-controls">
+        <div class="ar-overlay-adjust" id="arAdjustControls" hidden>
+          <button type="button" class="ar-btn ar-icon-btn" id="arRotateLeftBtn" aria-label="Girar para a esquerda">⟲</button>
+          <button type="button" class="ar-btn ar-icon-btn" id="arScaleDownBtn" aria-label="Diminuir">−</button>
+          <button type="button" class="ar-btn ar-icon-btn" id="arScaleUpBtn" aria-label="Aumentar">+</button>
+          <button type="button" class="ar-btn ar-icon-btn" id="arRotateRightBtn" aria-label="Girar para a direita">⟳</button>
+        </div>
         <button type="button" class="ar-btn" id="arRemoveBtn" hidden>Remover</button>
         <button type="button" class="ar-btn" id="arExitBtn">Sair do AR</button>
       </div>
@@ -109,6 +115,11 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
       const arOverlayHint = document.getElementById("arOverlayHint") as HTMLParagraphElement;
       const arRemoveBtn = document.getElementById("arRemoveBtn") as HTMLButtonElement;
       const arExitBtn = document.getElementById("arExitBtn") as HTMLButtonElement;
+      const arAdjustControls = document.getElementById("arAdjustControls") as HTMLDivElement;
+      const arRotateLeftBtn = document.getElementById("arRotateLeftBtn") as HTMLButtonElement;
+      const arRotateRightBtn = document.getElementById("arRotateRightBtn") as HTMLButtonElement;
+      const arScaleUpBtn = document.getElementById("arScaleUpBtn") as HTMLButtonElement;
+      const arScaleDownBtn = document.getElementById("arScaleDownBtn") as HTMLButtonElement;
       const arHint = document.getElementById("arHint") as HTMLParagraphElement;
 
       let selectedSrc: string | null = null;
@@ -222,13 +233,16 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         targetQuaternion = placedMesh.quaternion.clone();
 
         arRemoveBtn.hidden = false;
+        arAdjustControls.hidden = false;
         arOverlayHint.textContent =
-          'Arte posicionada. Use dois dedos para redimensionar e girar, ou toque novamente para reposicionar.';
+          'Arte posicionada. Use dois dedos ou os botões abaixo para redimensionar e girar.';
       }
 
       let reticleIsWall = false;
+      let selectCooldownUntil = 0;
 
       function onSelect() {
+        if (performance.now() < selectCooldownUntil) return;
         if (reticle && reticle.visible) {
           placeArtwork(Array.from(reticle.matrix.elements));
         }
@@ -243,6 +257,7 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         }
         targetQuaternion = null;
         arRemoveBtn.hidden = true;
+        arAdjustControls.hidden = true;
         arOverlayHint.textContent = "Toque em uma superfície (parede, chão, mesa) para posicionar a arte.";
       }
 
@@ -344,6 +359,7 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         placedMesh = null;
         currentSession = null;
         arRemoveBtn.hidden = true;
+        arAdjustControls.hidden = true;
       }
 
       startArBtn.addEventListener("click", startAR);
@@ -408,9 +424,32 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
 
       function onTouchEnd(event: TouchEvent) {
         if (event.touches.length < 2) {
+          if (gestureState) {
+            // Lifting fingers after a pinch/rotate can otherwise be misread as a tap that
+            // repositions the artwork; briefly ignore select events right after a gesture.
+            selectCooldownUntil = performance.now() + 400;
+          }
           gestureState = null;
         }
       }
+
+      // Manual controls as a reliable alternative to the pinch/twist touch gesture.
+      function rotateBy(deltaAngle: number) {
+        if (!placedMesh) return;
+        const base = targetQuaternion ?? placedMesh.quaternion.clone();
+        const deltaQuaternion = new THREE.Quaternion().setFromAxisAngle(rotationAxis, deltaAngle);
+        targetQuaternion = base.clone().multiply(deltaQuaternion);
+      }
+
+      function scaleBy(factor: number) {
+        if (!placedMesh) return;
+        targetScale = Math.min(Math.max(targetScale * factor, 0.2), 4);
+      }
+
+      arRotateLeftBtn.addEventListener("click", () => rotateBy(-Math.PI / 12));
+      arRotateRightBtn.addEventListener("click", () => rotateBy(Math.PI / 12));
+      arScaleUpBtn.addEventListener("click", () => scaleBy(1.15));
+      arScaleDownBtn.addEventListener("click", () => scaleBy(1 / 1.15));
 
       // Smooth towards the gesture target every frame instead of snapping, for steadier control.
       function updateGestureSmoothing() {

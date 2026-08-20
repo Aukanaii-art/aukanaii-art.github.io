@@ -172,9 +172,26 @@
 
 .ar-overlay-controls {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: var(--space-2);
 }
 
 .ar-overlay-controls .ar-btn {
   background: rgba(255, 255, 255, 0.92);
+}
+
+.ar-overlay-adjust {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.ar-icon-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
 }
