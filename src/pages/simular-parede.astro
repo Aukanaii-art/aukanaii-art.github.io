@@ -93,12 +93,7 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
     <div class="ar-overlay-root" id="arOverlay">
       <p class="ar-overlay-hint" id="arOverlayHint">Toque em uma superfície para posicionar a arte.</p>
       <div class="ar-overlay-controls">
-        <div class="ar-overlay-adjust" id="arAdjustControls" hidden>
-          <button type="button" class="ar-btn ar-icon-btn" id="arRotateLeftBtn" aria-label="Girar para a esquerda">⟲</button>
-          <button type="button" class="ar-btn ar-icon-btn" id="arScaleDownBtn" aria-label="Diminuir">−</button>
-          <button type="button" class="ar-btn ar-icon-btn" id="arScaleUpBtn" aria-label="Aumentar">+</button>
-          <button type="button" class="ar-btn ar-icon-btn" id="arRotateRightBtn" aria-label="Girar para a direita">⟳</button>
-        </div>
+        <button type="button" class="ar-btn" id="arFrameBtn" hidden>Adicionar moldura</button>
         <button type="button" class="ar-btn" id="arRemoveBtn" hidden>Remover</button>
         <button type="button" class="ar-btn" id="arExitBtn">Sair do AR</button>
       </div>
@@ -114,12 +109,8 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
       const arOverlay = document.getElementById("arOverlay") as HTMLDivElement;
       const arOverlayHint = document.getElementById("arOverlayHint") as HTMLParagraphElement;
       const arRemoveBtn = document.getElementById("arRemoveBtn") as HTMLButtonElement;
+      const arFrameBtn = document.getElementById("arFrameBtn") as HTMLButtonElement;
       const arExitBtn = document.getElementById("arExitBtn") as HTMLButtonElement;
-      const arAdjustControls = document.getElementById("arAdjustControls") as HTMLDivElement;
-      const arRotateLeftBtn = document.getElementById("arRotateLeftBtn") as HTMLButtonElement;
-      const arRotateRightBtn = document.getElementById("arRotateRightBtn") as HTMLButtonElement;
-      const arScaleUpBtn = document.getElementById("arScaleUpBtn") as HTMLButtonElement;
-      const arScaleDownBtn = document.getElementById("arScaleDownBtn") as HTMLButtonElement;
       const arHint = document.getElementById("arHint") as HTMLParagraphElement;
 
       let selectedSrc: string | null = null;
@@ -159,7 +150,12 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
       let scene: THREE.Scene | null = null;
       let camera: THREE.PerspectiveCamera | null = null;
       let reticle: THREE.Mesh | null = null;
-      let placedMesh: THREE.Mesh | null = null;
+      let placedGroup: THREE.Group | null = null;
+      let artMesh: THREE.Mesh | null = null;
+      let frameMesh: THREE.Mesh | null = null;
+      let frameEnabled = false;
+      let currentArtWidth = 0;
+      let currentArtHeight = 0;
       let hitTestSource: XRHitTestSource | null = null;
       let currentSession: XRSession | null = null;
 
@@ -195,6 +191,32 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         renderer.setSize(window.innerWidth, window.innerHeight);
       }
 
+      // Rebuilds (or removes) the frame mesh behind the artwork, sized to the current artwork.
+      function rebuildFrame() {
+        if (!placedGroup) return;
+        if (frameMesh) {
+          placedGroup.remove(frameMesh);
+          frameMesh.geometry.dispose();
+          (frameMesh.material as THREE.Material).dispose();
+          frameMesh = null;
+        }
+        if (!frameEnabled) return;
+        const border = Math.max(currentArtWidth, currentArtHeight) * 0.08;
+        const frameGeometry = new THREE.PlaneGeometry(
+          currentArtWidth + border * 2,
+          currentArtHeight + border * 2
+        ).rotateX(-Math.PI / 2);
+        const frameMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
+        frameMesh = new THREE.Mesh(frameGeometry, frameMaterial);
+        // Sits just behind the artwork plane (along its local normal) to avoid z-fighting.
+        frameMesh.position.y = -0.004;
+        placedGroup.add(frameMesh);
+      }
+
+      function updateFrameButtonLabel() {
+        arFrameBtn.textContent = frameEnabled ? "Remover moldura" : "Adicionar moldura";
+      }
+
       async function placeArtwork(matrixArray: number[]) {
         if (!selectedSrc || !scene) return;
 
@@ -202,22 +224,31 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         texture.colorSpace = THREE.SRGBColorSpace;
 
         const aspect = texture.image.width / texture.image.height;
-        const height = 0.6;
-        const width = height * aspect;
+        currentArtHeight = 0.6;
+        currentArtWidth = currentArtHeight * aspect;
 
-        if (placedMesh) {
-          scene.remove(placedMesh);
-          placedMesh.geometry.dispose();
-          (placedMesh.material as THREE.Material).dispose();
+        if (placedGroup) {
+          scene.remove(placedGroup);
+          artMesh?.geometry.dispose();
+          (artMesh?.material as THREE.Material | undefined)?.dispose();
+          frameMesh?.geometry.dispose();
+          (frameMesh?.material as THREE.Material | undefined)?.dispose();
+          frameMesh = null;
         }
 
-        const geometry = new THREE.PlaneGeometry(width, height).rotateX(-Math.PI / 2);
+        placedGroup = new THREE.Group();
+
+        const geometry = new THREE.PlaneGeometry(currentArtWidth, currentArtHeight).rotateX(
+          -Math.PI / 2
+        );
         const material = new THREE.MeshBasicMaterial({
           map: texture,
           side: THREE.DoubleSide,
           transparent: true,
         });
-        placedMesh = new THREE.Mesh(geometry, material);
+        artMesh = new THREE.Mesh(geometry, material);
+        placedGroup.add(artMesh);
+        rebuildFrame();
 
         const matrix4 = new THREE.Matrix4().fromArray(matrixArray);
         const position = new THREE.Vector3();
@@ -225,18 +256,25 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         const scaleVec = new THREE.Vector3();
         matrix4.decompose(position, quaternion, scaleVec);
 
-        placedMesh.position.copy(position);
-        placedMesh.quaternion.copy(quaternion);
-        scene.add(placedMesh);
+        placedGroup.position.copy(position);
+        placedGroup.quaternion.copy(quaternion);
+        scene.add(placedGroup);
 
         targetScale = 1;
-        targetQuaternion = placedMesh.quaternion.clone();
+        targetQuaternion = placedGroup.quaternion.clone();
 
         arRemoveBtn.hidden = false;
-        arAdjustControls.hidden = false;
+        arFrameBtn.hidden = false;
+        updateFrameButtonLabel();
         arOverlayHint.textContent =
-          'Arte posicionada. Use dois dedos ou os botões abaixo para redimensionar e girar.';
+          'Arte posicionada. Use dois dedos para redimensionar e girar, ou toque novamente para reposicionar.';
       }
+
+      arFrameBtn.addEventListener("click", () => {
+        frameEnabled = !frameEnabled;
+        rebuildFrame();
+        updateFrameButtonLabel();
+      });
 
       let reticleIsWall = false;
       let selectCooldownUntil = 0;
@@ -249,15 +287,20 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
       }
 
       function removePlacedArtwork() {
-        if (placedMesh && scene) {
-          scene.remove(placedMesh);
-          placedMesh.geometry.dispose();
-          (placedMesh.material as THREE.Material).dispose();
-          placedMesh = null;
+        if (placedGroup && scene) {
+          scene.remove(placedGroup);
+          artMesh?.geometry.dispose();
+          (artMesh?.material as THREE.Material | undefined)?.dispose();
+          frameMesh?.geometry.dispose();
+          (frameMesh?.material as THREE.Material | undefined)?.dispose();
+          placedGroup = null;
+          artMesh = null;
+          frameMesh = null;
         }
+        frameEnabled = false;
         targetQuaternion = null;
         arRemoveBtn.hidden = true;
-        arAdjustControls.hidden = true;
+        arFrameBtn.hidden = true;
         arOverlayHint.textContent = "Toque em uma superfície (parede, chão, mesa) para posicionar a arte.";
       }
 
@@ -317,7 +360,7 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
                   (reticle.material as THREE.MeshBasicMaterial).color.set(
                     reticleIsWall ? 0x7026b9 : 0xff4d4d
                   );
-                  if (!placedMesh) {
+                  if (!placedGroup) {
                     arOverlayHint.textContent = reticleIsWall
                       ? "Toque para posicionar a arte na parede."
                       : "Superfície horizontal detectada (chão/mesa). Toque para posicionar aqui.";
@@ -356,10 +399,13 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         scene = null;
         camera = null;
         reticle = null;
-        placedMesh = null;
+        placedGroup = null;
+        artMesh = null;
+        frameMesh = null;
+        frameEnabled = false;
         currentSession = null;
         arRemoveBtn.hidden = true;
-        arAdjustControls.hidden = true;
+        arFrameBtn.hidden = true;
       }
 
       startArBtn.addEventListener("click", startAR);
@@ -393,15 +439,15 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
       }
 
       function onTouchStart(event: TouchEvent) {
-        if (event.touches.length === 2 && placedMesh) {
+        if (event.touches.length === 2 && placedGroup) {
           gestureState = {
             distance: getTouchDistance(event.touches),
             angle: getTouchAngle(event.touches),
-            scale: placedMesh.scale.x,
-            baseQuaternion: placedMesh.quaternion.clone(),
+            scale: placedGroup.scale.x,
+            baseQuaternion: placedGroup.quaternion.clone(),
           };
-          targetScale = placedMesh.scale.x;
-          targetQuaternion = placedMesh.quaternion.clone();
+          targetScale = placedGroup.scale.x;
+          targetQuaternion = placedGroup.quaternion.clone();
         }
       }
 
@@ -410,7 +456,7 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
       const rotationAxis = new THREE.Vector3(0, 1, 0);
 
       function onTouchMove(event: TouchEvent) {
-        if (!gestureState || event.touches.length !== 2 || !placedMesh) return;
+        if (!gestureState || event.touches.length !== 2 || !placedGroup) return;
         event.preventDefault();
         const distance = getTouchDistance(event.touches);
         const angle = getTouchAngle(event.touches);
@@ -433,33 +479,15 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         }
       }
 
-      // Manual controls as a reliable alternative to the pinch/twist touch gesture.
-      function rotateBy(deltaAngle: number) {
-        if (!placedMesh) return;
-        const base = targetQuaternion ?? placedMesh.quaternion.clone();
-        const deltaQuaternion = new THREE.Quaternion().setFromAxisAngle(rotationAxis, deltaAngle);
-        targetQuaternion = base.clone().multiply(deltaQuaternion);
-      }
-
-      function scaleBy(factor: number) {
-        if (!placedMesh) return;
-        targetScale = Math.min(Math.max(targetScale * factor, 0.2), 4);
-      }
-
-      arRotateLeftBtn.addEventListener("click", () => rotateBy(-Math.PI / 12));
-      arRotateRightBtn.addEventListener("click", () => rotateBy(Math.PI / 12));
-      arScaleUpBtn.addEventListener("click", () => scaleBy(1.15));
-      arScaleDownBtn.addEventListener("click", () => scaleBy(1 / 1.15));
-
       // Smooth towards the gesture target every frame instead of snapping, for steadier control.
       function updateGestureSmoothing() {
-        if (!placedMesh) return;
+        if (!placedGroup) return;
         if (targetQuaternion) {
-          placedMesh.quaternion.slerp(targetQuaternion, 0.35);
+          placedGroup.quaternion.slerp(targetQuaternion, 0.35);
         }
-        const currentScale = placedMesh.scale.x;
+        const currentScale = placedGroup.scale.x;
         const nextScale = currentScale + (targetScale - currentScale) * 0.35;
-        placedMesh.scale.set(nextScale, nextScale, nextScale);
+        placedGroup.scale.set(nextScale, nextScale, nextScale);
       }
 
       function setupGestures() {
