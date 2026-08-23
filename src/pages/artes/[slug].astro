@@ -24,7 +24,7 @@ const artworkSchema = {
   creator: {
     "@type": "VisualArtist",
     name: "Aukanaii",
-    url: "https://aukanaii-art.github.io/portfolio/",
+    url: new URL(basePath, Astro.site).toString(),
   },
   image: new URL(project.coverImage, Astro.site).toString(),
   url: new URL(`${basePath}${canonicalPath}`, Astro.site).toString(),

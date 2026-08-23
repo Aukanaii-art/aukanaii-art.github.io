@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://aukanaii-art.github.io/portfolio/sitemap-index.xml
+Sitemap: https://aukanaii-art.github.io/sitemap-index.xml
