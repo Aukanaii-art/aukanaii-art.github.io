@@ -28,6 +28,7 @@ const imageUrl = new URL(
 const artistSchema = {
   "@context": "https://schema.org",
   "@type": "VisualArtist",
+  "@id": "https://aukanaii-art.github.io/#artist",
   name: "Aukanaii",
   alternateName: "Aukanaii Art",
   url: canonicalUrl,
@@ -47,10 +48,22 @@ const artistSchema = {
   ],
   nationality: "Brasileira",
 };
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "@id": "https://aukanaii-art.github.io/#website",
+  name: "Aukanaii",
+  alternateName: "Aukanaii Art",
+  url: "https://aukanaii-art.github.io/",
+  inLanguage: "pt-BR",
+  publisher: { "@id": "https://aukanaii-art.github.io/#artist" },
+};
 ---
 
 <link rel="canonical" href={canonicalUrl} />
 <meta name="description" content={description} />
+<meta name="author" content="Aukanaii" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 
 <meta property="og:locale" content="pt_BR" />
@@ -68,3 +81,4 @@ const artistSchema = {
 <meta name="twitter:image" content={imageUrl} />
 
 <script type="application/ld+json" set:html={JSON.stringify(artistSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
