@@ -200,35 +200,43 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
 <script>
   // Projects Carousel - Coverflow Effect (based on the former carousel-demo reference)
   (function initProjectsCarousel() {
-    const carouselUl = document.getElementById("projects-carousel-ul");
-    const carouselContainer = carouselUl?.parentElement; // .coverflow-carousel
-    const items = carouselUl?.querySelectorAll(".ticker-item");
-    const images = carouselUl?.querySelectorAll(".coverflow-item");
+    type GalleryProject = {
+      coverImage?: string;
+      galleryImages?: string[];
+      galleryTexts?: string[];
+      externalUrl?: string;
+    };
+
+    const carouselUl = document.getElementById("projects-carousel-ul") as HTMLUListElement | null;
+    const carouselContainer = carouselUl?.parentElement as HTMLElement | null; // .coverflow-carousel
+    const items = carouselUl?.querySelectorAll<HTMLLIElement>(".ticker-item");
+    const images = carouselUl?.querySelectorAll<HTMLImageElement>(".coverflow-item");
 
     if (!carouselUl || !carouselContainer || !items || !images) {
       console.error("Projects carousel elements not found");
       return;
     }
+    const carouselElement = carouselUl;
 
     // Project data loaded from config JSON
-    const projectsData = JSON.parse(
+    const projectsData: GalleryProject[] = JSON.parse(
       document.getElementById("projects-data")?.textContent || "[]"
     );
 
     // Fullscreen gallery elements
-    const galleryModal = document.getElementById("project-gallery-modal");
-    const galleryImage = document.getElementById("project-gallery-image");
-    const galleryCounter = document.getElementById("project-gallery-counter");
-    const galleryCaption = document.getElementById("project-gallery-caption");
-    const galleryThumbnails = document.getElementById("project-gallery-thumbnails");
-    const galleryClose = document.getElementById("project-gallery-close");
-    const galleryPrev = document.getElementById("project-gallery-prev");
-    const galleryNext = document.getElementById("project-gallery-next");
-    const galleryZoomIn = document.getElementById("project-gallery-zoom-in");
-    const galleryZoomOut = document.getElementById("project-gallery-zoom-out");
-    const galleryZoomReset = document.getElementById("project-gallery-zoom-reset");
-    let activeProjectGalleryImages = [];
-    let activeProjectGalleryTexts = [];
+    const galleryModal = document.getElementById("project-gallery-modal") as HTMLElement | null;
+    const galleryImage = document.getElementById("project-gallery-image") as HTMLImageElement | null;
+    const galleryCounter = document.getElementById("project-gallery-counter") as HTMLParagraphElement | null;
+    const galleryCaption = document.getElementById("project-gallery-caption") as HTMLParagraphElement | null;
+    const galleryThumbnails = document.getElementById("project-gallery-thumbnails") as HTMLDivElement | null;
+    const galleryClose = document.getElementById("project-gallery-close") as HTMLButtonElement | null;
+    const galleryPrev = document.getElementById("project-gallery-prev") as HTMLButtonElement | null;
+    const galleryNext = document.getElementById("project-gallery-next") as HTMLButtonElement | null;
+    const galleryZoomIn = document.getElementById("project-gallery-zoom-in") as HTMLButtonElement | null;
+    const galleryZoomOut = document.getElementById("project-gallery-zoom-out") as HTMLButtonElement | null;
+    const galleryZoomReset = document.getElementById("project-gallery-zoom-reset") as HTMLButtonElement | null;
+    let activeProjectGalleryImages: string[] = [];
+    let activeProjectGalleryTexts: string[] = [];
     let activeGalleryIndex = 0;
     let galleryZoom = 1;
     let galleryPanX = 0;
@@ -238,7 +246,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
     let galleryPanStartY = 0;
     let galleryHistoryActive = false;
     let closingFromHistory = false;
-    const preloadedImages = new Set();
+    const preloadedImages = new Set<string>();
 
     function updateGalleryZoom() {
       if (!galleryImage) return;
@@ -249,7 +257,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       }
     }
 
-    function setGalleryZoom(nextZoom) {
+    function setGalleryZoom(nextZoom: number) {
       galleryZoom = Math.min(3, Math.max(1, nextZoom));
       if (galleryZoom === 1) {
         galleryPanX = 0;
@@ -265,7 +273,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       updateGalleryZoom();
     }
 
-    function preloadImage(src) {
+    function preloadImage(src: string) {
       if (!src || preloadedImages.has(src)) return;
       const image = new Image();
       image.decoding = "async";
@@ -288,7 +296,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       }
     }
 
-    function getProjectGalleryImages(projectIndex) {
+    function getProjectGalleryImages(projectIndex: number): string[] {
       const project = projectsData[projectIndex] || {};
       const projectGallery = Array.isArray(project.galleryImages)
         ? project.galleryImages.filter((imagePath) =>
@@ -303,7 +311,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       return [];
     }
 
-    function getProjectGalleryTexts(projectIndex, galleryLength) {
+    function getProjectGalleryTexts(projectIndex: number, galleryLength: number): string[] {
       const project = projectsData[projectIndex] || {};
 
       if (!Array.isArray(project.galleryTexts)) {
@@ -384,7 +392,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       preloadGalleryNeighbors(2);
     }
 
-    function openGallery(projectIndex) {
+    function openGallery(projectIndex: number) {
       if (!galleryModal) return;
 
       const project = projectsData[projectIndex] || {};
@@ -440,7 +448,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       }
     }
 
-    function openGalleryAtVirtualIndex(virtualIndex) {
+    function openGalleryAtVirtualIndex(virtualIndex: number) {
       const realIndex = getRealProjectIndex(virtualIndex);
       openGallery(realIndex);
     }
@@ -448,10 +456,10 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
     // Update project description with vertical scroll to avoid flicker
     const descriptionTrack = document.getElementById(
       "project-description-track"
-    );
+    ) as HTMLDivElement | null;
     const descriptionViewport = document.querySelector(
       ".project-description-viewport"
-    );
+    ) as HTMLDivElement | null;
     let currentProjectIndex = 0;
     let isScrolling = false;
     let currentTranslateY = 0;
@@ -459,8 +467,9 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
     // Initialize: position the first project
     function initializeDescriptionPosition() {
       if (!descriptionTrack || !descriptionViewport) return;
+      const track = descriptionTrack;
 
-      const items = descriptionTrack.querySelectorAll(".project-content-item");
+      const items = track.querySelectorAll<HTMLDivElement>(".project-content-item");
       if (items.length === 0) return;
 
       const firstItem = items[0];
@@ -470,16 +479,17 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
           // Move the first item to align with the viewport top
           const firstItemTop = firstItem.offsetTop;
           currentTranslateY = -firstItemTop;
-          descriptionTrack.style.transform = `translateY(${currentTranslateY}px)`;
+          track.style.transform = `translateY(${currentTranslateY}px)`;
         });
       }
     }
 
-    function updateProjectDescription(projectIndex) {
+    function updateProjectDescription(projectIndex: number) {
       if (!descriptionTrack || !descriptionViewport || isScrolling) return;
       if (projectIndex === currentProjectIndex) return;
+      const track = descriptionTrack;
 
-      const items = descriptionTrack.querySelectorAll(".project-content-item");
+      const items = track.querySelectorAll<HTMLDivElement>(".project-content-item");
       if (items.length === 0) return;
 
       if (projectIndex < 0 || projectIndex >= items.length) return;
@@ -498,7 +508,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       const startTime = performance.now();
       const duration = 500; // 500ms scroll animation
 
-      function animateScroll(currentTime) {
+      function animateScroll(currentTime: number) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
 
@@ -509,7 +519,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
             : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
         currentTranslateY = startY + (targetY - startY) * easeInOutCubic;
-        descriptionTrack.style.transform = `translateY(${currentTranslateY}px)`;
+        track.style.transform = `translateY(${currentTranslateY}px)`;
 
         if (progress < 1) {
           requestAnimationFrame(animateScroll);
@@ -532,32 +542,32 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
     // Create cloned items (front clones: full list)
     for (let i = 0; i < cloneCount; i++) {
       const originalItem = items[i];
-      const clone = originalItem.cloneNode(true);
+      const clone = originalItem.cloneNode(true) as HTMLLIElement;
       clone.classList.add("clone-item");
-      clone.setAttribute("data-clone-index", i);
-      clone.setAttribute("data-original-index", i);
+      clone.setAttribute("data-clone-index", String(i));
+      clone.setAttribute("data-original-index", String(i));
       clone.setAttribute("aria-hidden", "true");
-      carouselUl.insertBefore(clone, items[0]);
+      carouselElement.insertBefore(clone, items[0]);
     }
 
     // Create cloned items (back clones: full list)
     for (let i = 0; i < cloneCount; i++) {
       const originalItem = items[i];
-      const clone = originalItem.cloneNode(true);
+      const clone = originalItem.cloneNode(true) as HTMLLIElement;
       clone.classList.add("clone-item");
-      clone.setAttribute("data-clone-index", i);
-      clone.setAttribute("data-original-index", i);
+      clone.setAttribute("data-clone-index", String(i));
+      clone.setAttribute("data-original-index", String(i));
       clone.setAttribute("aria-hidden", "true");
-      carouselUl.appendChild(clone);
+      carouselElement.appendChild(clone);
     }
 
     // Re-fetch all items (including clones)
-    const allItems = carouselUl.querySelectorAll(".ticker-item");
-    const allImages = carouselUl.querySelectorAll(".coverflow-item");
+    const allItems = carouselElement.querySelectorAll<HTMLLIElement>(".ticker-item");
+    const allImages = carouselElement.querySelectorAll<HTMLImageElement>(".coverflow-item");
     const totalVirtualItems = totalItems * 3;
 
     function updateItemWidth() {
-      const referenceImage = carouselUl.querySelector(".coverflow-item");
+      const referenceImage = carouselElement.querySelector<HTMLImageElement>(".coverflow-item");
       if (!referenceImage) return;
 
       const measuredWidth = referenceImage.getBoundingClientRect().width;
@@ -573,15 +583,15 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
     let velocity = 0;
     let lastX = 0;
     let lastTime = 0;
-    let animationFrameId = null;
+    let animationFrameId: number | null = null;
     let dragDistance = 0;
-    let clickedItemIndex = null;
-    let autoPlayTimer = null;
+    let clickedItemIndex: number | null = null;
+    let autoPlayTimer: number | null = null;
     let isAutoPlaying = true;
-    const autoPlayInterval = 4000;
+    const autoPlayInterval = 7000;
     let lastProjectIndex = -1; // track last displayed project index
 
-    function getOffset(itemIndex, scrollX) {
+    function getOffset(itemIndex: number, scrollX: number): number {
       if (!carouselContainer) return 0;
       const containerCenter = carouselContainer.offsetWidth / 2;
       const itemStart = itemIndex * (itemWidth + gap);
@@ -589,7 +599,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       return itemCenterX - containerCenter;
     }
 
-    function lerp(input, inputRange, outputRange) {
+    function lerp(input: number, inputRange: number[], outputRange: Array<number | string>): number | string {
       if (input <= inputRange[0]) return outputRange[0];
       if (input >= inputRange[inputRange.length - 1])
         return outputRange[outputRange.length - 1];
@@ -598,12 +608,11 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
         if (input >= inputRange[i] && input <= inputRange[i + 1]) {
           const t =
             (input - inputRange[i]) / (inputRange[i + 1] - inputRange[i]);
-          if (
-            typeof outputRange[i] === "string" &&
-            outputRange[i].includes("%")
-          ) {
-            const start = parseFloat(outputRange[i]);
-            const end = parseFloat(outputRange[i + 1]);
+          const startValue = outputRange[i];
+          const endValue = outputRange[i + 1];
+          if (typeof startValue === "string" && typeof endValue === "string" && startValue.includes("%")) {
+            const start = parseFloat(startValue);
+            const end = parseFloat(endValue);
             return start + (end - start) * t + "%";
           }
           return (
@@ -615,7 +624,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       return outputRange[0];
     }
 
-    function getTransformFromOffset(offset) {
+    function getTransformFromOffset(offset: number) {
       const isMobile = window.matchMedia("(max-width: 600px)").matches;
 
       if (isMobile) {
@@ -638,7 +647,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
 
     function updateTransforms() {
       allItems.forEach((item, virtualIndex) => {
-        const img = item.querySelector(".coverflow-item");
+        const img = item.querySelector<HTMLImageElement>(".coverflow-item");
         if (!img) return;
 
         const offset = getOffset(virtualIndex, currentX);
@@ -653,7 +662,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       });
     }
 
-    function getSnapPosition(virtualIndex) {
+    function getSnapPosition(virtualIndex: number): number {
       if (!carouselContainer) return 0;
       const containerCenter = carouselContainer.offsetWidth / 2;
       const itemStart = virtualIndex * (itemWidth + gap);
@@ -667,25 +676,25 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
 
       if (currentX > -singleSetWidth / 2) {
         currentX -= singleSetWidth;
-        carouselUl.style.transition = "none";
+        carouselElement.style.transition = "none";
         updateCarouselPosition();
         setTimeout(() => {
-          carouselUl.style.transition = "";
+          carouselElement.style.transition = "";
         }, 0);
       }
 
       const maxScroll = -singleSetWidth * 1.5;
       if (currentX < maxScroll) {
         currentX += singleSetWidth;
-        carouselUl.style.transition = "none";
+        carouselElement.style.transition = "none";
         updateCarouselPosition();
         setTimeout(() => {
-          carouselUl.style.transition = "";
+          carouselElement.style.transition = "";
         }, 0);
       }
     }
 
-    function findNearestItem() {
+    function findNearestItem(): number {
       if (!carouselContainer) return totalItems;
       const containerCenter = carouselContainer.offsetWidth / 2;
       let nearestIndex = totalItems;
@@ -705,7 +714,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
     }
 
     // Map virtual index to real project index
-    function getRealProjectIndex(virtualIndex) {
+    function getRealProjectIndex(virtualIndex: number): number {
       // Virtual index ranges:
       // 0 ~ cloneCount-1: leading clones
       // cloneCount ~ cloneCount+totalItems-1: real items
@@ -734,7 +743,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
     }
 
     // Convert virtual index to real index and update description before animation
-    function updateProjectDescriptionForVirtualIndex(virtualIndex) {
+    function updateProjectDescriptionForVirtualIndex(virtualIndex: number) {
       const realIndex = getRealProjectIndex(virtualIndex);
       if (realIndex !== lastProjectIndex) {
         lastProjectIndex = realIndex;
@@ -742,7 +751,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       }
     }
 
-    function goToItem(virtualIndex) {
+    function goToItem(virtualIndex: number) {
       // Update description before carousel animation starts
       updateProjectDescriptionForVirtualIndex(virtualIndex);
       const snapX = getSnapPosition(virtualIndex);
@@ -786,11 +795,11 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       }, 5000);
     }
 
-    function animateTo(targetX, duration = 450) {
+    function animateTo(targetX: number, duration = 450) {
       const startX = currentX;
       const startTime = performance.now();
 
-      function animate(currentTime) {
+      function animate(currentTime: number) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
 
@@ -816,7 +825,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
     }
 
     function updateCarouselPosition() {
-      carouselUl.style.transform = `translateX(${currentX}px)`;
+      carouselElement.style.transform = `translateX(${currentX}px)`;
       updateTransforms();
       checkLoopJump();
     }
@@ -832,7 +841,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       const clickedTarget = e.target;
       const clickedElement =
         clickedTarget instanceof HTMLElement
-          ? clickedTarget.closest(".ticker-item")
+          ? clickedTarget.closest<HTMLLIElement>(".ticker-item")
           : null;
       if (clickedElement) {
         clickedItemIndex = Array.from(allItems).indexOf(clickedElement);
@@ -847,7 +856,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       lastTime = performance.now();
       velocity = 0;
       dragDistance = 0;
-      carouselUl.style.cursor = "grabbing";
+      carouselElement.style.cursor = "grabbing";
 
       pauseAutoPlay();
 
@@ -881,7 +890,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       if (!isDragging) return;
 
       isDragging = false;
-      carouselUl.style.cursor = "grab";
+      carouselElement.style.cursor = "grab";
       let openedGallery = false;
 
       if (dragDistance < 5 && clickedItemIndex !== null) {
@@ -908,7 +917,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
 
     carouselUl.addEventListener("mouseleave", () => {
       if (isDragging) {
-        carouselUl.style.cursor = "grabbing";
+        carouselElement.style.cursor = "grabbing";
       }
     });
 
@@ -1045,7 +1054,7 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       }
     });
 
-    carouselUl.style.cursor = "grab";
+    carouselElement.style.cursor = "grab";
 
     allImages.forEach((img) => {
       img.style.cursor = "pointer";
