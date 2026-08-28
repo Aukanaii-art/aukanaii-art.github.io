@@ -788,27 +788,11 @@ nav {
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
-  min-height: 224px;
   position: relative;
-}
-
-.project-description-viewport {
-  position: relative;
-  width: 100%;
-  height: 224px;
-  overflow: hidden;
-}
-
-.project-description-track {
-  position: relative;
-  width: 100%;
-  will-change: transform;
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .project-content-item {
   width: 100%;
-  min-height: 224px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1246,13 +1230,6 @@ nav {
   .project-gallery-thumbnails {
     justify-content: flex-start;
     max-width: 88vw;
-  }
-  .project-description-viewport {
-    height: 320px;
-  }
-  
-  .project-content-item {
-    min-height: 320px;
   }
   .project-title {
     font-size: 1.5rem;

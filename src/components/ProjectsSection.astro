@@ -17,7 +17,10 @@ const pressFeature = {
     "https://novaimprensa.com/2026/08/por-ai-artista-resgata-ancestralidade-indigena-no-litoral-norte.html",
   archiveUrl: `${normalizedBaseUrl}images/posts/nova_imprensa/noticia.pdf`,
 };
-const galleryItems = [...projectsConfig.projects, pressFeature];
+const galleryItems = [...projectsConfig.projects, pressFeature].map((project) => ({
+  ...project,
+  artworkUrl: `${normalizedBaseUrl}artes/${project.slug}/`,
+}));
 ---
 
 <section id="projects" class="projects-section">
@@ -74,60 +77,17 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
     </div>
     <!-- Project Description Area -->
     <div class="project-description-area" id="project-description-area">
-      <div class="project-description-viewport">
-        <div class="project-description-track" id="project-description-track">
-          {
-            galleryItems.map((project, index) => (
-              <div class="project-content-item" data-project-index={index}>
-                <h3 class="project-title">{project.title}</h3>
-                <p class="project-description">{project.description}</p>
-                {project.technique && <p class="project-technique">{project.technique}</p>}
-                {"externalUrl" in project ? (
-                  <div class="project-press-links">
-                    <a
-                      href={project.externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="project-artwork-link"
-                      aria-label={`Ler a matéria ${project.title}`}
-                    >
-                      Ler a matéria <span aria-hidden="true">↗</span>
-                    </a>
-                    <a
-                      href={project.archiveUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="project-archive-link"
-                    >
-                      Cópia em PDF
-                    </a>
-                  </div>
-                ) : (
-                  <a
-                    href={`${normalizedBaseUrl}artes/${project.slug}/`}
-                    class="project-artwork-link"
-                    aria-label={`Conheca a obra ${project.title}`}
-                  >
-                    Conheca esta obra <span aria-hidden="true">→</span>
-                  </a>
-                )}
-                {/* <div class="project-technologies">
-                  {project.technologies.map((tech) => (
-                    <span class="technology-tag">{tech}</span>
-                  ))}
-                </div> */}
-                {/* <div class="project-links">
-                  <a href={project.liveLink} class="project-link">
-                    Live <span style="font-size: 1.2rem;">→</span>
-                  </a>
-                  <a href={project.githubLink} class="project-link">
-                    GitHub <span style="font-size: 1.2rem;">→</span>
-                  </a>
-                </div> */}
-              </div>
-            ))
-          }
-        </div>
+      <div class="project-content-item" id="project-description-content" aria-live="polite">
+        <h3 class="project-title">{galleryItems[0].title}</h3>
+        <p class="project-description">{galleryItems[0].description}</p>
+        <p class="project-technique">{galleryItems[0].technique}</p>
+        <a
+          href={`${normalizedBaseUrl}artes/${galleryItems[0].slug}/`}
+          class="project-artwork-link"
+          aria-label={`Conheca a obra ${galleryItems[0].title}`}
+        >
+          Conheca esta obra <span aria-hidden="true">→</span>
+        </a>
       </div>
     </div>
 
@@ -201,10 +161,16 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
   // Projects Carousel - Coverflow Effect (based on the former carousel-demo reference)
   (function initProjectsCarousel() {
     type GalleryProject = {
+      slug?: string;
+      title?: string;
+      description?: string;
+      technique?: string;
       coverImage?: string;
       galleryImages?: string[];
       galleryTexts?: string[];
       externalUrl?: string;
+      archiveUrl?: string;
+      artworkUrl?: string;
     };
 
     const carouselUl = document.getElementById("projects-carousel-ul") as HTMLUListElement | null;
@@ -453,85 +419,65 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
       openGallery(realIndex);
     }
 
-    // Update project description with vertical scroll to avoid flicker
-    const descriptionTrack = document.getElementById(
-      "project-description-track"
-    ) as HTMLDivElement | null;
-    const descriptionViewport = document.querySelector(
-      ".project-description-viewport"
+    const descriptionContent = document.getElementById(
+      "project-description-content"
     ) as HTMLDivElement | null;
     let currentProjectIndex = 0;
-    let isScrolling = false;
-    let currentTranslateY = 0;
-
-    // Initialize: position the first project
-    function initializeDescriptionPosition() {
-      if (!descriptionTrack || !descriptionViewport) return;
-      const track = descriptionTrack;
-
-      const items = track.querySelectorAll<HTMLDivElement>(".project-content-item");
-      if (items.length === 0) return;
-
-      const firstItem = items[0];
-      if (firstItem) {
-        // Wait for layout to complete before measuring
-        requestAnimationFrame(() => {
-          // Move the first item to align with the viewport top
-          const firstItemTop = firstItem.offsetTop;
-          currentTranslateY = -firstItemTop;
-          track.style.transform = `translateY(${currentTranslateY}px)`;
-        });
-      }
-    }
 
     function updateProjectDescription(projectIndex: number) {
-      if (!descriptionTrack || !descriptionViewport || isScrolling) return;
+      if (!descriptionContent) return;
       if (projectIndex === currentProjectIndex) return;
-      const track = descriptionTrack;
+      const project = projectsData[projectIndex];
+      if (!project) return;
 
-      const items = track.querySelectorAll<HTMLDivElement>(".project-content-item");
-      if (items.length === 0) return;
+      descriptionContent.replaceChildren();
 
-      if (projectIndex < 0 || projectIndex >= items.length) return;
+      const title = document.createElement("h3");
+      title.className = "project-title";
+      title.textContent = project.title || "";
 
-      // Get target project position
-      const targetItem = items[projectIndex];
-      if (!targetItem) return;
+      const description = document.createElement("p");
+      description.className = "project-description";
+      description.textContent = project.description || "";
 
-      // Compute target translate so the project aligns with viewport top
-      const targetItemTop = targetItem.offsetTop;
-      const targetY = -targetItemTop;
+      const technique = document.createElement("p");
+      technique.className = "project-technique";
+      technique.textContent = project.technique || "";
 
-      // Start scroll animation
-      isScrolling = true;
-      const startY = currentTranslateY;
-      const startTime = performance.now();
-      const duration = 500; // 500ms scroll animation
+      descriptionContent.append(title, description, technique);
 
-      function animateScroll(currentTime: number) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
+      if (typeof project.externalUrl === "string") {
+        const links = document.createElement("div");
+        links.className = "project-press-links";
 
-        // Ease-in-out cubic
-        const easeInOutCubic =
-          progress < 0.5
-            ? 4 * progress * progress * progress
-            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        const articleLink = document.createElement("a");
+        articleLink.className = "project-artwork-link";
+        articleLink.href = project.externalUrl;
+        articleLink.target = "_blank";
+        articleLink.rel = "noopener noreferrer";
+        articleLink.textContent = "Ler a matéria ↗";
+        links.appendChild(articleLink);
 
-        currentTranslateY = startY + (targetY - startY) * easeInOutCubic;
-        track.style.transform = `translateY(${currentTranslateY}px)`;
-
-        if (progress < 1) {
-          requestAnimationFrame(animateScroll);
-        } else {
-          // Animation done
-          currentTranslateY = targetY;
-          currentProjectIndex = projectIndex;
-          isScrolling = false;
+        if (typeof project.archiveUrl === "string") {
+          const archiveLink = document.createElement("a");
+          archiveLink.className = "project-archive-link";
+          archiveLink.href = project.archiveUrl;
+          archiveLink.target = "_blank";
+          archiveLink.rel = "noopener noreferrer";
+          archiveLink.textContent = "Cópia em PDF";
+          links.appendChild(archiveLink);
         }
+
+        descriptionContent.appendChild(links);
+      } else {
+        const artworkLink = document.createElement("a");
+        artworkLink.className = "project-artwork-link";
+        artworkLink.href = project.artworkUrl || "#projects";
+        artworkLink.textContent = "Conheca esta obra →";
+        descriptionContent.appendChild(artworkLink);
       }
 
-      requestAnimationFrame(animateScroll);
+      currentProjectIndex = projectIndex;
     }
 
     let itemWidth = 350;
@@ -1070,12 +1016,6 @@ const galleryItems = [...projectsConfig.projects, pressFeature];
     window.addEventListener("resize", recenterCarousel);
 
     updateTransforms();
-
-    // Initialize description position
-    initializeDescriptionPosition();
-
-    // Initialize description (show first project without scrolling)
-    currentProjectIndex = 0;
 
     startAutoPlay();
   })();
