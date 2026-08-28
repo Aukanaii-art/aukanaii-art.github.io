@@ -4,6 +4,20 @@ import { projectsConfig } from "../config/projects";
 const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
+const pressFeature = {
+  slug: "aukanaii-no-nova-imprensa",
+  title: "Aukanaii no Nova Imprensa",
+  coverImage: `${normalizedBaseUrl}images/posts/nova_imprensa/CapaNoticia.png`,
+  description:
+    "A trajetória de Aukanaii e o resgate da ancestralidade indígena no Litoral Norte.",
+  technique: "Reportagem - Nova Imprensa",
+  pressHeadline: "Artista resgata ancestralidade indígena no Litoral Norte",
+  pressExcerpt: "Superação de desafios, maternidade solo e resgate das raízes.",
+  externalUrl:
+    "https://novaimprensa.com/2026/08/por-ai-artista-resgata-ancestralidade-indigena-no-litoral-norte.html",
+  archiveUrl: `${normalizedBaseUrl}images/posts/nova_imprensa/noticia.pdf`,
+};
+const galleryItems = [...projectsConfig.projects, pressFeature];
 ---
 
 <section id="projects" class="projects-section">
@@ -24,12 +38,12 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
             style="display:flex;position:relative;list-style-type:none;padding:0;margin:0;justify-content:flex-start;flex-direction:row;gap:0px;align-items:center;width:100%;height:100%;max-height:100%;max-width:100%;"
           >
             {
-              projectsConfig.projects.map((project, index) => (
+              galleryItems.map((project, index) => (
                 <li
-                  class="ticker-item"
+                  class:list={["ticker-item", { "press-gallery-item": "externalUrl" in project }]}
                   aria-hidden="false"
                   aria-posinset={index + 1}
-                  aria-setsize={projectsConfig.projects.length}
+                  aria-setsize={galleryItems.length}
                   style="flex-grow:0;flex-shrink:0;position:relative;height:fit-content;z-index:1000;transform:none"
                 >
                   <img
@@ -44,6 +58,13 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
                     fetchpriority={index === 0 ? "high" : "low"}
                     style="transform:none"
                   />
+                  {"externalUrl" in project && (
+                    <div class="press-card-preview" aria-hidden="true">
+                      <p>Nova Imprensa</p>
+                      <h3>{project.pressHeadline}</h3>
+                      <span>{project.pressExcerpt}</span>
+                    </div>
+                  )}
                 </li>
               ))
             }
@@ -56,18 +77,40 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
       <div class="project-description-viewport">
         <div class="project-description-track" id="project-description-track">
           {
-            projectsConfig.projects.map((project, index) => (
+            galleryItems.map((project, index) => (
               <div class="project-content-item" data-project-index={index}>
                 <h3 class="project-title">{project.title}</h3>
                 <p class="project-description">{project.description}</p>
                 {project.technique && <p class="project-technique">{project.technique}</p>}
-                <a
-                  href={`${normalizedBaseUrl}artes/${project.slug}/`}
-                  class="project-artwork-link"
-                  aria-label={`Conheca a obra ${project.title}`}
-                >
-                  Conheca esta obra <span aria-hidden="true">→</span>
-                </a>
+                {"externalUrl" in project ? (
+                  <div class="project-press-links">
+                    <a
+                      href={project.externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="project-artwork-link"
+                      aria-label={`Ler a matéria ${project.title}`}
+                    >
+                      Ler a matéria <span aria-hidden="true">↗</span>
+                    </a>
+                    <a
+                      href={project.archiveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="project-archive-link"
+                    >
+                      Cópia em PDF
+                    </a>
+                  </div>
+                ) : (
+                  <a
+                    href={`${normalizedBaseUrl}artes/${project.slug}/`}
+                    class="project-artwork-link"
+                    aria-label={`Conheca a obra ${project.title}`}
+                  >
+                    Conheca esta obra <span aria-hidden="true">→</span>
+                  </a>
+                )}
                 {/* <div class="project-technologies">
                   {project.technologies.map((tech) => (
                     <span class="technology-tag">{tech}</span>
@@ -87,6 +130,7 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
         </div>
       </div>
     </div>
+
   </div>
 
   <div
@@ -150,7 +194,7 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
 <script
   type="application/json"
   id="projects-data"
-  set:html={JSON.stringify(projectsConfig.projects)}
+  set:html={JSON.stringify(galleryItems)}
 />
 
 <script>
@@ -344,6 +388,10 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
       if (!galleryModal) return;
 
       const project = projectsData[projectIndex] || {};
+      if (typeof project.externalUrl === "string") {
+        window.open(project.externalUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
       activeProjectGalleryImages = getProjectGalleryImages(projectIndex);
       if (activeProjectGalleryImages.length === 0) return;
       activeProjectGalleryTexts = getProjectGalleryTexts(

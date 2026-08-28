@@ -13,6 +13,36 @@ import SeoHead from "../components/SeoHead.astro";
 const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
+const pressArticleSchema = {
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "@id": "https://novaimprensa.com/2026/08/por-ai-artista-resgata-ancestralidade-indigena-no-litoral-norte.html#article",
+  headline: "Por aí: Artista resgata ancestralidade indígena no Litoral Norte",
+  description:
+    "Reportagem sobre a trajetória de Aukanaii, artista visual indígena Atikum-Umã e Pankará, e seu trabalho de resgate da ancestralidade no Litoral Norte.",
+  datePublished: "2026-08-27",
+  inLanguage: "pt-BR",
+  author: {
+    "@type": "Person",
+    name: "Fernanda Veiga",
+  },
+  publisher: {
+    "@type": "NewsMediaOrganization",
+    name: "Nova Imprensa",
+    url: "https://novaimprensa.com/",
+  },
+  about: {
+    "@id": "https://aukanaii-art.github.io/#artist",
+  },
+  mainEntityOfPage:
+    "https://novaimprensa.com/2026/08/por-ai-artista-resgata-ancestralidade-indigena-no-litoral-norte.html",
+  associatedMedia: {
+    "@type": "MediaObject",
+    contentUrl: `${normalizedBaseUrl}images/posts/nova_imprensa/noticia.pdf`,
+    encodingFormat: "application/pdf",
+    name: "Cópia arquivada da reportagem do Nova Imprensa",
+  },
+};
 ---
 
 <html lang="pt-BR">
@@ -27,6 +57,7 @@ const normalizedBaseUrl = import.meta.env.BASE_URL.endsWith("/")
       description="Portfolio de Aukanaii, artista visual indigena Atikum Uma. Conheca ilustracoes, pinturas, murais, animacoes e tatuagens autorais sobre ancestralidade, territorio, memoria e povos originarios."
       image="image/sobre_mim.jpg"
     />
+    <script type="application/ld+json" set:html={JSON.stringify(pressArticleSchema)} />
     <script>
       // Disable browser scroll restoration and ensure page starts at top
       if ("scrollRestoration" in history) {
