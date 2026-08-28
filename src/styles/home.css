@@ -1248,11 +1248,11 @@ nav {
     max-width: 88vw;
   }
   .project-description-viewport {
-    height: 280px;
+    height: 320px;
   }
   
   .project-content-item {
-    min-height: 280px;
+    min-height: 320px;
   }
   .project-title {
     font-size: 1.5rem;
